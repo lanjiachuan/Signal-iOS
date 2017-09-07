@@ -235,6 +235,11 @@ const NSUInteger kOWSProfileManager_MaxAvatarDiameter = 640;
 
     @synchronized(self)
     {
+        DDLogError(@"----- saveUserProfile: %@, avatarFileName: %@, avatarUrlPath: %@",
+            userProfile.recipientId,
+            userProfile.avatarFileName,
+            userProfile.avatarUrlPath);
+
         // Make sure to save on the local db connection for consistency.
         [self.dbConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
             [userProfile saveWithTransaction:transaction];
@@ -997,16 +1002,19 @@ const NSUInteger kOWSProfileManager_MaxAvatarDiameter = 640;
     {
         UIImage *_Nullable image = [self.otherUsersProfileAvatarImageCache objectForKey:recipientId];
         if (image) {
+            DDLogError(@"----- profileAvatarForRecipientId: cache hit: %@", recipientId);
             return image;
         }
 
         UserProfile *userProfile = [self getOrBuildUserProfileForRecipientId:recipientId];
         if (userProfile.avatarFileName.length > 0) {
+            DDLogError(@"----- profileAvatarForRecipientId: avatarFileName: %@", userProfile.avatarFileName);
             image = [self loadProfileAvatarWithFilename:userProfile.avatarFileName];
             if (image) {
                 [self.otherUsersProfileAvatarImageCache setObject:image forKey:recipientId];
             }
         } else if (userProfile.avatarUrlPath.length > 0) {
+            DDLogError(@"----- profileAvatarForRecipientId: avatarUrlPath: %@", userProfile.avatarUrlPath);
             [self downloadAvatarForUserProfile:userProfile];
         }
 
