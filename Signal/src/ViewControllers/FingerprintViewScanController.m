@@ -9,9 +9,9 @@
 #import "Signal-Swift.h"
 #import "UIColor+OWS.h"
 #import "UIFont+OWS.h"
-#import "UIUtil.h"
 #import "UIView+OWS.h"
-#import "UIViewController+CameraPermissions.h"
+#import "UIViewController+Permissions.h"
+#import <SignalMessaging/UIUtil.h>
 #import <SignalServiceKit/OWSError.h>
 #import <SignalServiceKit/OWSFingerprint.h>
 #import <SignalServiceKit/OWSFingerprintBuilder.h>
@@ -41,7 +41,7 @@ NS_ASSUME_NONNULL_BEGIN
     self.recipientId = recipientId;
     self.accountManager = [TSAccountManager sharedInstance];
 
-    OWSContactsManager *contactsManager = [Environment getCurrent].contactsManager;
+    OWSContactsManager *contactsManager = [Environment current].contactsManager;
     self.contactName = [contactsManager displayNameForPhoneIdentifier:recipientId];
 
     OWSRecipientIdentity *_Nullable recipientIdentity =
@@ -82,7 +82,7 @@ NS_ASSUME_NONNULL_BEGIN
     footer.backgroundColor = darkGrey;
     [self.view addSubview:footer];
     [footer autoPinWidthToSuperview];
-    [footer autoPinToBottomLayoutGuideOfViewController:self withInset:0];
+    [footer autoPinEdgeToSuperviewEdge:ALEdgeBottom];
     [footer autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:self.qrScanningController.view];
 
     UILabel *cameraInstructionLabel = [UILabel new];
@@ -96,7 +96,7 @@ NS_ASSUME_NONNULL_BEGIN
     [footer addSubview:cameraInstructionLabel];
     [cameraInstructionLabel autoPinWidthToSuperviewWithMargin:ScaleFromIPhone5To7Plus(16.f, 30.f)];
     CGFloat instructionsVMargin = ScaleFromIPhone5To7Plus(10.f, 20.f);
-    [cameraInstructionLabel autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:instructionsVMargin];
+    [cameraInstructionLabel autoPinToBottomLayoutGuideOfViewController:self withInset:instructionsVMargin];
     [cameraInstructionLabel autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:instructionsVMargin];
 }
 
@@ -118,19 +118,19 @@ NS_ASSUME_NONNULL_BEGIN
 {
     [super viewDidAppear:animated];
 
-    [self ows_askForCameraPermissions:^{
+    [self ows_askForCameraPermissions:^(BOOL granted) {
+        if (granted) {
+            // Camera stops capturing when "sharing" while in capture mode.
+            // Also, it's less obvious whats being "shared" at this point,
+            // so just disable sharing when in capture mode.
 
-        // Camera stops capturing when "sharing" while in capture mode.
-        // Also, it's less obvious whats being "shared" at this point,
-        // so just disable sharing when in capture mode.
+            DDLogInfo(@"%@ Showing Scanner", self.logTag);
 
-        DDLogInfo(@"%@ Showing Scanner", self.tag);
-
-        [self.qrScanningController startCapture];
-    }
-        failureCallback:^{
+            [self.qrScanningController startCapture];
+        } else {
             [self.navigationController popViewControllerAnimated:YES];
-        }];
+        }
+    }];
 }
 
 #pragma mark - OWSQRScannerDelegate
@@ -156,7 +156,7 @@ NS_ASSUME_NONNULL_BEGIN
                               identityKey:self.identityKey
                               recipientId:self.recipientId
                               contactName:self.contactName
-                                      tag:self.tag];
+                                      tag:self.logTag];
 }
 
 - (void)showVerificationFailedWithError:(NSError *)error
@@ -170,7 +170,7 @@ NS_ASSUME_NONNULL_BEGIN
         cancelBlock:^{
             [self.navigationController popViewControllerAnimated:YES];
         }
-        tag:self.tag];
+        tag:self.logTag];
 }
 
 + (void)showVerificationSucceeded:(UIViewController *)viewController
@@ -219,8 +219,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (void)showVerificationFailedWithError:(NSError *)error
                          viewController:(UIViewController *)viewController
-                             retryBlock:(void (^_Nullable)())retryBlock
-                            cancelBlock:(void (^_Nonnull)())cancelBlock
+                             retryBlock:(void (^_Nullable)(void))retryBlock
+                            cancelBlock:(void (^_Nonnull)(void))cancelBlock
                                     tag:(NSString *)tag
 {
     OWSAssert(viewController);
@@ -239,14 +239,11 @@ NS_ASSUME_NONNULL_BEGIN
                                                                       preferredStyle:UIAlertControllerStyleAlert];
 
     if (retryBlock) {
-        [alertController
-            addAction:[UIAlertAction
-                          actionWithTitle:NSLocalizedString(@"RETRY_BUTTON_TEXT",
-                                              @"Generic text for button that retries whatever the last action was.")
-                                    style:UIAlertActionStyleDefault
-                                  handler:^(UIAlertAction *action) {
-                                      retryBlock();
-                                  }]];
+        [alertController addAction:[UIAlertAction actionWithTitle:[CommonStrings retryButton]
+                                                            style:UIAlertActionStyleDefault
+                                                          handler:^(UIAlertAction *action) {
+                                                              retryBlock();
+                                                          }]];
     }
 
     [alertController addAction:[OWSAlerts cancelAction]];
@@ -261,18 +258,6 @@ NS_ASSUME_NONNULL_BEGIN
     self.qrScanningController.view.hidden = YES;
 
     [super dismissViewControllerAnimated:animated completion:completion];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

@@ -2,9 +2,6 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
-@class TSNumberVerifier;
-
 #ifndef TextSecureKit_Constants_h
 #define TextSecureKit_Constants_h
 
@@ -15,8 +12,6 @@ typedef NS_ENUM(NSInteger, TSWhisperMessageType) {
     TSPreKeyWhisperMessageType      = 3,
     TSUnencryptedWhisperMessageType = 4,
 };
-
-typedef enum { kSMSVerification, kPhoneNumberVerification } VerificationTransportType;
 
 #pragma mark Server Address
 
@@ -42,7 +37,6 @@ typedef enum { kSMSVerification, kPhoneNumberVerification } VerificationTranspor
 //
 //#endif
 
-#define textSecureGeneralAPI @"v1"
 #define textSecureAccountsAPI @"v1/accounts"
 #define textSecureAttributesAPI @"/attributes/"
 
@@ -58,14 +52,6 @@ typedef enum { kSMSVerification, kPhoneNumberVerification } VerificationTranspor
 #define textSecureSetProfileNameAPIFormat @"v1/profile/name/%@"
 #define textSecureProfileAvatarFormAPI @"v1/profile/form/avatar"
 
-#pragma mark Push RegistrationSpecific Constants
-typedef NS_ENUM(NSInteger, TSPushRegistrationError) {
-    TSPushRegistrationErrorNetwork,
-    TSPushRegistrationErrorAuthentication,
-    TSPushRegistrationErrorRequest
-};
-
-typedef void (^failedPushRegistrationRequestBlock)(TSPushRegistrationError error);
-
+#define SignalApplicationGroup @"group.org.whispersystems.signal.group"
 
 #endif

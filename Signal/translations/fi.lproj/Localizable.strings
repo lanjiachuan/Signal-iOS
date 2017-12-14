@@ -37,15 +37,6 @@
 /* The label for the 'save' button in action sheets. */
 "ALERT_SAVE" = "Tallenna";
 
-/* A message for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_MESSAGE" = "Tarkistetaan onko kyseessä Signal-tili";
-
-/* A title for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_TITLE" = "Tarkistetaan";
-
-/* registration button text */
-"ALREADY_HAVE_ACCOUNT_BUTTON" = "Onko sinulla jo Signal-tunnus?";
-
 /* No comment provided by engineer. */
 "ANSWER_CALL_BUTTON_TITLE" = "Vastaa";
 
@@ -62,7 +53,7 @@
 "APN_MESSAGE_IN_GROUP_DETAILED" = "%@ ryhmässä %@: %@";
 
 /* Text prompting user to edit their profile name. */
-"APP_SETTINGS_EDIT_PROFILE_NAME_PROMPT" = "Enter your name";
+"APP_SETTINGS_EDIT_PROFILE_NAME_PROMPT" = "Syötä nimesi";
 
 /* Message format for the 'new app version available' alert. Embeds: {{The latest app version number.}}. */
 "APP_UPDATE_NAG_ALERT_MESSAGE_FORMAT" = "Versio %@ on nyt saatavilla App Storesta.";
@@ -86,7 +77,7 @@
 "ATTACHMENT" = "Liite";
 
 /* Title for the 'attachment approval' dialog. */
-"ATTACHMENT_APPROVAL_DIALOG_TITLE" = "Liite";
+"ATTACHMENT_APPROVAL_DIALOG_TITLE" = "Liitetiedosto";
 
 /* Format string for file extension label in call interstitial view */
 "ATTACHMENT_APPROVAL_FILE_EXTENSION_FORMAT" = "Tiedoston tyyppi: %@";
@@ -206,7 +197,7 @@
 "BLOCK_OFFER_ACTIONSHEET_TITLE_FORMAT" = "Estä %@?";
 
 /* Label for generic done button. */
-"BUTTON_DONE" = "Done";
+"BUTTON_DONE" = "Valmis";
 
 /* Alert message when calling and permissions for microphone are missing */
 "CALL_AUDIO_PERMISSION_MESSAGE" = "Signal tarvitsee lupaa käyttää laitteesi mikrofonia puheluja  ja ääniviestejä varten. Voit antaa tämän käyttöoikeuden laitteesi Asetuksista.";
@@ -216,6 +207,9 @@
 
 /* Accessibilty label for placing call button */
 "CALL_LABEL" = "Soita";
+
+/* Text shown on call screen in place of remote video */
+"CALL_REMOTE_VIDEO_DISABLED" = "Päivitä versioon iOS 9 tai uudempaan nähdäksesi videokuvan.";
 
 /* Call setup status label after outgoing call times out */
 "CALL_SCREEN_STATUS_NO_ANSWER" = "Ei vastausta.";
@@ -232,6 +226,21 @@
 /* Title for alert offering to call a user. */
 "CALL_USER_ALERT_TITLE" = "Soita?";
 
+/* Accessibility label for accepting incoming calls */
+"CALL_VIEW_ACCEPT_INCOMING_CALL_LABEL" = "Hyväksy saapuva puhelu";
+
+/* Accessibility label for selection the audio source */
+"CALL_VIEW_AUDIO_SOURCE_LABEL" = "Äänilähde";
+
+/* Accessibility label for declining incoming calls */
+"CALL_VIEW_DECLINE_INCOMING_CALL_LABEL" = "Hyväksy saapuva puhelu";
+
+/* Accessibility label for hang up call */
+"CALL_VIEW_HANGUP_LABEL" = "Lopeta puhelu";
+
+/* Accessibility label for muting the microphone */
+"CALL_VIEW_MUTE_LABEL" = "Mykistä";
+
 /* Reminder to the user of the benefits of enabling CallKit and disabling CallKit privacy. */
 "CALL_VIEW_SETTINGS_NAG_DESCRIPTION_ALL" = "Voit vastata puheluihin suoraan lukitusruudulta ja nähdä saapuvien puheluiden numerot ja nimet, jos vaihdat asetuksiasi.\n\nKatso yksityisyysasetuksista tarkempia tietoja.";
 
@@ -241,8 +250,14 @@
 /* Label for button that dismiss the call view's settings nag. */
 "CALL_VIEW_SETTINGS_NAG_NOT_NOW_BUTTON" = "Ei nyt";
 
-/* Label for button that shows the privacy settings */
+/* Label for button that shows the privacy settings. */
 "CALL_VIEW_SETTINGS_NAG_SHOW_CALL_SETTINGS" = "Näytä yksityisyysasetukset";
+
+/* Accessibility label to switch to audio only */
+"CALL_VIEW_SWITCH_TO_AUDIO_LABEL" = "Vaihda äänipuheluun";
+
+/* Accessibility label to switch to video call */
+"CALL_VIEW_SWITCH_TO_VIDEO_LABEL" = "Vaihda videopuheluun";
 
 /* notification action */
 "CALLBACK_BUTTON_TITLE" = "Soita takaisin";
@@ -261,6 +276,15 @@
 
 /* Activity Sheet label */
 "COMPARE_SAFETY_NUMBER_ACTION" = "Vertaa leikepöytään";
+
+/* Table section header for contact listing when composing a new message */
+"COMPOSE_MESSAGE_CONTACT_SECTION_TITLE" = "Yhteystiedot";
+
+/* Table section header for group listing when composing a new message */
+"COMPOSE_MESSAGE_GROUP_SECTION_TITLE" = "Ryhmät";
+
+/* Table section header for invite listing when composing a new message */
+"COMPOSE_MESSAGE_INVITE_SECTION_TITLE" = "Kutsu";
 
 /* Multiline label explaining why compose-screen contact picker is empty. */
 "COMPOSE_SCREEN_MISSING_CONTACTS_PERMISSION" = "Jotta voit nähdä, ketkä yhteystietodoistasi ovat Signalin käyttäjiä, salli yhteystietojen käyttö järjestelmäasetuksistasi.";
@@ -368,16 +392,22 @@
 "CONVERSATION_SETTINGS_VIEW_SHARE_PROFILE_WITH_USER" = "Jaa profiilisi";
 
 /* Message shown in conversation view that offers to add an unknown user to your phone's contacts. */
-"CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER" = "Add to Contacts";
+"CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER" = "Lisää yhteystietoihin";
 
 /* Message shown in conversation view that offers to share your profile with a user. */
-"CONVERSATION_VIEW_ADD_USER_TO_PROFILE_WHITELIST_OFFER" = "Share Your Profile With This User";
+"CONVERSATION_VIEW_ADD_USER_TO_PROFILE_WHITELIST_OFFER" = "Jaa profiilikuvasi tämän käyttäjän kanssa";
 
 /* Title for the group of buttons show for unknown contacts offering to add them to contacts, etc. */
-"CONVERSATION_VIEW_CONTACTS_OFFER_TITLE" = "This user is not in your contacts.";
+"CONVERSATION_VIEW_CONTACTS_OFFER_TITLE" = "Tämä käyttäjä ei ole yhteystiedoissasi";
+
+/* Indicates that the app is loading more messages in this conversation. */
+"CONVERSATION_VIEW_LOADING_MORE_MESSAGES" = "Ladataan lisää viestejä...";
+
+/* Indicator on truncated text messages that they can be tapped to see the entire text message. */
+"CONVERSATION_VIEW_OVERSIZE_TEXT_TAP_FOR_MORE" = "Näytä lisää napauttamalla";
 
 /* Message shown in conversation view that offers to block an unknown user. */
-"CONVERSATION_VIEW_UNKNOWN_CONTACT_BLOCK_OFFER" = "Block This User";
+"CONVERSATION_VIEW_UNKNOWN_CONTACT_BLOCK_OFFER" = "Estä tämä käyttäjä";
 
 /* ActionSheet title */
 "CORRUPTED_SESSION_DESCRIPTION" = "Istunnon alustaminen mahdollistaa uusien viestien vastaanottamisen yhteystiedolta %@. Vanhoja, jo korruptoituneita viestejä ei kuitenkaan ole mahdollista enää palauttaa.";
@@ -389,13 +419,43 @@
 "CREATE_NEW_GROUP" = "Luo uusi ryhmä";
 
 /* Title for the 'crop/scale image' dialog. */
-"CROP_SCALE_IMAGE_VIEW_TITLE" = "Move and Scale";
+"CROP_SCALE_IMAGE_VIEW_TITLE" = "Liikuta ja skaalaa";
 
 /* Subtitle shown while the app is updating its database. */
 "DATABASE_VIEW_OVERLAY_SUBTITLE" = "Tämä saattaa viedä muutaman minuutin.";
 
 /* Title shown while the app is updating its database. */
 "DATABASE_VIEW_OVERLAY_TITLE" = "Päivitetään tietokantaa";
+
+/* Message indicating that the debug log is being uploaded. */
+"DEBUG_LOG_ACTIVITY_INDICATOR" = "Lähetetään virheenkorjausloki...";
+
+/* Message of the debug log alert. */
+"DEBUG_LOG_ALERT_MESSAGE" = "Mitä haluat tehdä virheenkorjauslokisi linkillä?";
+
+/* Label for the 'Open a Bug Report' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_BUG_REPORT" = "Avaa virheraportti";
+
+/* Label for the 'copy link' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_COPY_LINK" = "Kopioi linkki";
+
+/* Label for the 'email debug log' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_EMAIL" = "Lähetä sähköposti tukitiimille";
+
+/* Label for the 'send to self' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_SEND_TO_SELF" = "Lähetä itselle";
+
+/* Title of the debug log alert. */
+"DEBUG_LOG_ALERT_TITLE" = "Yksi askel lisää";
+
+/* Title of the alert indicating the debug log upload failed. */
+"DEBUG_LOG_FAILURE_ALERT_TITLE" = "Virheenkorjauslokin lähettäminen epäonnistui";
+
+/* Message of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_MESSAGE" = "Gist -linkki on nyt kopioitu leikepöydällesi. Sinut ohjataan nyt GitHubissa olevaan virheluetteloon.";
+
+/* Title of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_TITLE" = "Ohjaus GitHubiin";
 
 /* {{Short Date}} when device last communicated with Signal Server. */
 "DEVICE_LAST_ACTIVE_AT_LABEL" = "Viimeksi käytetty: %@";
@@ -460,6 +520,12 @@
 /* Short name for edit menu item to copy contents of media message. */
 "EDIT_ITEM_COPY_ACTION" = "Kopioi";
 
+/* Short name for edit menu item to delete contents of media message. */
+"EDIT_ITEM_DELETE_ACTION" = "Poista";
+
+/* Short name for edit menu item to show message metadata. */
+"EDIT_ITEM_MESSAGE_METADATA_ACTION" = "Tietoja";
+
 /* Short name for edit menu item to save contents of media message. */
 "EDIT_ITEM_SAVE_ACTION" = "Tallenna";
 
@@ -520,6 +586,9 @@
 /* Error mesage indicating that message send failed due to block list */
 "ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_BLOCK_LIST" = "Viestin lähettäminen ei onnistunut, koska olet estänyt kyseisen yhteystiedon.";
 
+/* Error mesage indicating that message send failed due to failed attachment write */
+"ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_FAILED_ATTACHMENT_WRITE" = "Lähetys epäonnistui koska liitteen lisääminen epäonnistui.";
+
 /* Generic error used whenver Signal can't contact the server */
 "ERROR_DESCRIPTION_NO_INTERNET" = "Signal ei saanut yhteyttä internetiin. Yritä uudelleen toisesta WiFi-verkosta tai kokeile mobiiliyhteyttä.";
 
@@ -537,6 +606,9 @@
 
 /* Error message when attempting to send message */
 "ERROR_DESCRIPTION_UNREGISTERED_RECIPIENT" = "Yhteystieto ei käytä Signalia.";
+
+/* Error message when unable to receive an attachment because the sending client is too old. */
+"ERROR_MESSAGE_ATTACHMENT_FROM_OLD_CLIENT" = "Virhe: Pyydä lähettäjää päivittämään Signal ja lähettämään viesti uudelleen";
 
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_DUPLICATE_MESSAGE" = "Vastaanotettiin viestin kaksoiskappale.";
@@ -565,14 +637,8 @@
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_WRONG_TRUSTED_IDENTITY_KEY" = "Turvanumero on vaihtunut. Varmenna napauttamalla.";
 
-/* during registration */
-"EXISTING_USER_REGISTRATION_ALERT_BODY" = "Täällä hetkellä Signal voi olla käytössä vain yhdellä mobiililaitteella ja puhelinnumerolla.";
-
-/* during registration, embeds {{device type}}, e.g. \"iPhone\" or \"iPad\" */
-"EXISTING_USER_REGISTRATION_ALERT_TITLE" = "Jos otat käyttöön tämän %@-laitteen, Signalia ei voi enää käyttää muulla laitteella, joka käyttää tätä samaa puhelinnumeroa.";
-
 /* Message for the alert indicating the 'export with signal' file had an invalid filename. */
-"EXPORT_WITH_SIGNAL_ERROR_MESSAGE_INVALID_FILENAME" = "Virheellinen tiedostonnimi.";
+"EXPORT_WITH_SIGNAL_ERROR_MESSAGE_INVALID_FILENAME" = "Virheellinen tiedostonimi.";
 
 /* Message for the alert indicating the 'export with signal' attachment couldn't be loaded. */
 "EXPORT_WITH_SIGNAL_ERROR_MESSAGE_MISSING_ATTACHMENT" = "Tiedoston lataaminen epäonnistui.";
@@ -610,14 +676,35 @@
 /* A label for generic attachments. */
 "GENERIC_ATTACHMENT_LABEL" = "Liitetiedosto";
 
+/* Error displayed when there is a failure fetching gifs from the remote service. */
+"GIF_PICKER_ERROR_FETCH_FAILURE" = "GIFin lataaminen epäonnistui. Varmista, että olet verkossa.";
+
+/* Generic error displayed when picking a gif */
+"GIF_PICKER_ERROR_GENERIC" = "Tuntematon virhe.";
+
+/* Shown when selected gif couldn't be fetched */
+"GIF_PICKER_FAILURE_ALERT_TITLE" = "GIFin valinta epäonnistui";
+
+/* Alert message shown when user tries to search for GIFs without entering any search terms. */
+"GIF_PICKER_VIEW_MISSING_QUERY" = "Ole hyvä ja syötä hakusana.";
+
+/* Title for the 'gif picker' dialog. */
+"GIF_PICKER_VIEW_TITLE" = "GIF-haku";
+
+/* Indicates that an error occured while searching. */
+"GIF_VIEW_SEARCH_ERROR" = "Virhe. Yritä uudelleen napauttamalla.";
+
+/* Indicates that the user's search had no results. */
+"GIF_VIEW_SEARCH_NO_RESULTS" = "Ei hakutuloksia";
+
+/* Placeholder text for the search field in gif view */
+"GIF_VIEW_SEARCH_PLACEHOLDER_TEXT" = "Syötä hakusana";
+
 /* No comment provided by engineer. */
 "GROUP_AVATAR_CHANGED" = "Kuvake päivitetty.";
 
 /* No comment provided by engineer. */
 "GROUP_CREATED" = "Ryhmä luotu.";
-
-/* No comment provided by engineer. */
-"GROUP_CREATING" = "Luodaan uutta ryhmää";
 
 /* Message shown in conversation view that indicates there were issues with group creation. */
 "GROUP_CREATION_FAILED" = "Kaikkia ryhmän jäseniä ei voitu lisätä ryhmään. Napauta yrittääksesi uudelleen.";
@@ -767,13 +854,10 @@
 "LINKING_DEVICE_FAILED_TITLE" = "Laitteen yhdistäminen epäonnistui";
 
 /* table cell label in conversation settings */
-"LIST_GROUP_MEMBERS_ACTION" = "Näytä ryhmän jäsenet";
+"LIST_GROUP_MEMBERS_ACTION" = "Ryhmän jäsenet";
 
 /* No comment provided by engineer. */
 "LOGGING_SECTION" = "Lokit";
-
-/* No comment provided by engineer. */
-"ME_STRING" = "Minä";
 
 /* media picker option to take photo or video */
 "MEDIA_FROM_CAMERA_BUTTON" = "Kamera";
@@ -787,11 +871,65 @@
 /* No comment provided by engineer. */
 "MESSAGE_COMPOSEVIEW_TITLE" = "Uusi viesti";
 
-/* message footer for delivered messages */
+/* Label for file size of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_FILE_SIZE" = "Tiedoston koko";
+
+/* Label for the MIME type of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MIME_TYPE" = "MIME-tyyppi";
+
+/* Label for 'missing' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MISSING_FILE" = "Puuttuva liite";
+
+/* Label for 'not yet downloaded' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_NOT_YET_DOWNLOADED" = "Ei vielä ladattu";
+
+/* Status label for messages which are delivered. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_DELIVERED" = "Toimitettu";
+
+/* Status label for messages which are failed. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_FAILED" = "Epäonnistui";
+
+/* Status label for messages which are read. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_READ" = "Luettu";
+
+/* Status label for messages which are sending. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENDING" = "Lähetetään";
+
+/* Status label for messages which are sent. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENT" = "Lähetetty";
+
+/* Status label for messages which are uploading. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_UPLOADING" = "Lähetetään";
+
+/* Label for messages without a body or attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_NO_ATTACHMENT_OR_BODY" = "Viestissä ei ole sisältöä tai liitettä.";
+
+/* Label for the 'received date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_RECEIVED_DATE_TIME" = "Vastaanotettu";
+
+/* Label for the 'sender' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENDER" = "Lähettäjä";
+
+/* Label for the 'sent date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENT_DATE_TIME" = "Lähetetty";
+
+/* Label for the original filename of any attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SOURCE_FILENAME" = "Tiedostonimi";
+
+/* Title for the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_TITLE" = "Viesti";
+
+/* message status for message delivered to their recipient. */
 "MESSAGE_STATUS_DELIVERED" = "Toimitettu";
 
 /* message footer for failed messages */
 "MESSAGE_STATUS_FAILED" = "Lähetys epäonnistui. Yritä uudelleen napauttamalla.";
+
+/* message footer for read messages */
+"MESSAGE_STATUS_READ" = "Luettu";
+
+/* message status while message is sending. */
+"MESSAGE_STATUS_SENDING" = "Lähetetään...";
 
 /* message footer for sent messages */
 "MESSAGE_STATUS_SENT" = "Lähetetty";
@@ -821,7 +959,7 @@
 "MESSAGES_VIEW_GROUP_N_MEMBERS_BLOCKED_FORMAT" = "Estit %@ jäsentä tästä ryhmästä";
 
 /* Text for banner in group conversation view that offers to share your profile with this group. */
-"MESSAGES_VIEW_GROUP_PROFILE_WHITELIST_BANNER" = "Share Your Profile With This Group?";
+"MESSAGES_VIEW_GROUP_PROFILE_WHITELIST_BANNER" = "Jaa profiilisi tämän ryhmän kanssa?";
 
 /* Indicates that more than one member of this group conversation is no longer verified. */
 "MESSAGES_VIEW_N_MEMBERS_NO_LONGER_VERIFIED" = "Useampi kuin yksi tämän ryhmän jäsenistä ei ole enää merkitty varmennetuksi. Lisätietoja napsauttamalla.";
@@ -855,23 +993,8 @@
    Alert title when camera is not authorized */
 "MISSING_CAMERA_PERMISSION_TITLE" = "Signal tarvitsee oikeutta käyttää kameraa.";
 
-/* No comment provided by engineer. */
-"MSGVIEW_MISSED_CALL_BECAUSE_OF_CHANGED_IDENTITY" = "Vastaamatta jäänyt puhelu koska hänen turvanumeronsa on vaihtunut.";
-
 /* notification title. Embeds {{caller's name or phone number}} */
 "MSGVIEW_MISSED_CALL_WITH_NAME" = "Vastaamatta jäänyt puhelu: %@";
-
-/* No comment provided by engineer. */
-"MSGVIEW_RECEIVED_CALL" = "%@ soitti sinulle.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_THEY_TRIED_TO_CALL_YOU" = "%@ yritti soittaa sinulle.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_CALLED" = "Soitit puhelun: %@";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_TRIED_TO_CALL" = "Yritit soittaa yhteystiedolle %@.";
 
 /* No comment provided by engineer. */
 "MULTIDEVICE_PAIRING_MAX_DESC" = "Et voi yhdistää enempää laitteita.";
@@ -883,7 +1006,7 @@
 "MUTE_BEHAVIOR_EXPLANATION" = "Et saa ilmoituksia mykistetyistä keskusteluista.";
 
 /* A button to skip a view. */
-"NAVIGATION_ITEM_SKIP_BUTTON" = "Skip";
+"NAVIGATION_ITEM_SKIP_BUTTON" = "Ohita";
 
 /* No comment provided by engineer. */
 "NETWORK_ERROR_RECOVERY" = "Tarkista että verkkoyhteytesi on päällä ja yritä uudelleen.";
@@ -915,7 +1038,7 @@
 /* The title for the 'create group' button. */
 "NEW_GROUP_CREATE_BUTTON" = "Luo";
 
-/* The navbar title for the 'new group' view. */
+/* Used in place of the group name when a group has not yet been named. */
 "NEW_GROUP_DEFAULT_TITLE" = "Uusi ryhmä";
 
 /* An indicator that a user is a member of the new group. */
@@ -932,6 +1055,9 @@
 
 /* The alert title if user tries to exit the new group view without saving changes. */
 "NEW_GROUP_VIEW_UNSAVED_CHANGES_TITLE" = "Tallentamattomia muutoksia";
+
+/* No comment provided by engineer. */
+"new_message" = "Uusi viesti";
 
 /* A label for the 'add by phone number' button in the 'new non-contact conversation' view */
 "NEW_NONCONTACT_CONVERSATION_VIEW_BUTTON" = "Hae";
@@ -989,10 +1115,7 @@
 "OUTGOING_INCOMPLETE_CALL" = "Vastaamaton lähtevä puhelu";
 
 /* A display format for oversize text messages. */
-"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@... [Näytä lisää napauttamalla]";
-
-/* The title of the 'oversize text message' view. */
-"OVERSIZE_TEXT_MESSAGE_VIEW_TITLE" = "Viesti";
+"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@...";
 
 /* A format for a label showing an example phone number. Embeds {{the example phone number}}. */
 "PHONE_NUMBER_EXAMPLE_FORMAT" = "Esimerkki: %@";
@@ -1097,31 +1220,31 @@
 "PROFILE_VIEW_CLEAR_AVATAR" = "Poista kuva";
 
 /* Error message shown when user tries to update profile with a profile name that is too long. */
-"PROFILE_VIEW_ERROR_PROFILE_NAME_TOO_LONG" = "Your profile name is too long.";
+"PROFILE_VIEW_ERROR_PROFILE_NAME_TOO_LONG" = "Profiilinimesi on liian pitkä.";
 
 /* Error message shown when a profile update fails. */
 "PROFILE_VIEW_ERROR_UPDATE_FAILED" = "Profiilin päivitys epäonnistui";
 
 /* Default text for the profile name field of the profile view. */
-"PROFILE_VIEW_NAME_DEFAULT_TEXT" = "Enter your name";
+"PROFILE_VIEW_NAME_DEFAULT_TEXT" = "Syötä nimesi";
 
 /* Label for the profile avatar field of the profile view. */
-"PROFILE_VIEW_PROFILE_AVATAR_FIELD" = "Avatar";
+"PROFILE_VIEW_PROFILE_AVATAR_FIELD" = "Kuvake";
 
 /* Description of the user profile. */
-"PROFILE_VIEW_PROFILE_DESCRIPTION" = "Your Signal Profile will be visible to your contacts, when you initiate new conversations, and when you share it with other users and groups.";
+"PROFILE_VIEW_PROFILE_DESCRIPTION" = "Signal-profiilisi näkyy kaikille yhteystiedoillesi, kun aloitat uusia keskusteluja ja kun jaat sen muiden käyttäjien ja ryhmien kanssa.";
 
 /* Link to more information about the user profile. */
-"PROFILE_VIEW_PROFILE_DESCRIPTION_LINK" = "Tap here to learn more.";
+"PROFILE_VIEW_PROFILE_DESCRIPTION_LINK" = "Lisätietoja napauttamalla tästä";
 
 /* Label for the profile name field of the profile view. */
-"PROFILE_VIEW_PROFILE_NAME_FIELD" = "Profile Name";
+"PROFILE_VIEW_PROFILE_NAME_FIELD" = "Profiilin nimi";
 
 /* Button to save the profile view in the profile view. */
-"PROFILE_VIEW_SAVE_BUTTON" = "Save";
+"PROFILE_VIEW_SAVE_BUTTON" = "Tallenna";
 
 /* Alert title that indicates the user's profile view is being saved. */
-"PROFILE_VIEW_SAVING" = "Saving...";
+"PROFILE_VIEW_SAVING" = "Tallennetaan...";
 
 /* Title for the profile view. */
 "PROFILE_VIEW_TITLE" = "Profiili";
@@ -1149,12 +1272,6 @@
 
 /* No comment provided by engineer. */
 "RATING_TITLE" = "Tue Signalia!";
-
-/* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_MESSAGE" = "Syötä kelvollinen maatunnus.";
-
-/* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_TITLE" = "Virhe maatunnuksessa";
 
 /* No comment provided by engineer. */
 "REGISTER_CONTACTS_WELCOME" = "Tervetuloa!";
@@ -1252,10 +1369,19 @@
 /* No comment provided by engineer. */
 "SECURE_SESSION_RESET" = "Suojattu istunto alustettu.";
 
+/* Label for 'select gif to attach' action sheet button */
+"SELECT_GIF_BUTTON" = "GIF";
+
+/* Table section header for conversations you haven't recently used. */
+"SELECT_THREAD_TABLE_OTHER_CHATS_TITLE" = "Muut yhteystiedot";
+
+/* Table section header for recently active conversations */
+"SELECT_THREAD_TABLE_RECENT_CHATS_TITLE" = "Äskeiset keskustelut";
+
 /* No comment provided by engineer. */
 "SEND_AGAIN_BUTTON" = "Lähetä uudelleen";
 
-/* No comment provided by engineer. */
+/* Label for the send button in the conversation view. */
 "SEND_BUTTON_TITLE" = "Lähetä";
 
 /* Header title for the 'send external file' view. */
@@ -1387,6 +1513,12 @@
 /* Settings table view cell label */
 "SETTINGS_PRIVACY_TITLE" = "Yksityisyys";
 
+/* Label for the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPT" = "Lukukuittaukset";
+
+/* An explanation of the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPTS_SECTION_FOOTER" = "Näe ja jaa milloin viestit on luettu. Tämä asetus on valinnainen ja koskee kaikkia keskusteluja.";
+
 /* No comment provided by engineer. */
 "SETTINGS_SCREEN_SECURITY" = "Estä kuvakaappaukset";
 
@@ -1416,6 +1548,24 @@
 
 /* action sheet item */
 "SHARE_ACTION_TWEET" = "Twitter";
+
+/* Indicates that the share extension is still loading. */
+"SHARE_EXTENSION_LOADING" = "Ladataan...";
+
+/* Message indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_MESSAGE" = "Avaa Signal ohjelma rekisteröityäksesi.";
+
+/* Title indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_TITLE" = "Ei rekisteröity";
+
+/* Message indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_MESSAGE" = "Avaa Signal ohjelma päivittääksesi.";
+
+/* Title indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_TITLE" = "Ei valmis";
+
+/* Shown when trying to share content to a Signal user for the share extension. Followed by failure details. */
+"SHARE_EXTENSION_UNABLE_TO_BUILD_ATTACHMENT_ALERT_TITLE" = "Liitteen valmistelu epäonnistui";
 
 /* Action sheet item */
 "SHOW_SAFETY_NUMBER_ACTION" = "Näytä uusi turvanumero";
@@ -1477,6 +1627,9 @@
 /* Displayed if for some reason we can't determine a contacts phone number *or* name */
 "UNKNOWN_CONTACT_NAME" = "Tuntematon yhteystieto";
 
+/* Indicates an unknown or unrecognizable value. */
+"UNKNOWN_VALUE" = "Tuntematon";
+
 /* button title for unlinking a device */
 "UNLINK_ACTION" = "Poista";
 
@@ -1517,13 +1670,22 @@
 "UPGRADE_EXPERIENCE_CALLKIT_TITLE" = "Pyyhkäise vastataksesi";
 
 /* button label shown one time, after user upgrades app */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_BUTTON" = "Set up Your Profile";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_BUTTON" = "Aseta profiilisi";
 
 /* Description of new profile feature for upgrading (existing) users */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_DESCRIPTION" = "You can now share a profile photo and name with your friends on Signal.";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_DESCRIPTION" = "Voit nyt jakaa profiilikuvasi ja -nimesi ystäviesi kanssa Signalissa.";
 
 /* Header for upgrade experience */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_TITLE" = "Ready for Your Closeup?";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_TITLE" = "Oletko valmis kuvaa varten?";
+
+/* Description of new profile feature for upgrading (existing) users */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_DESCRIPTION" = "Sinulla on nyt mahdollisuus nähdä ja jakaa muille milloin viestit on luettu.";
+
+/* button label shown one time, after upgrade */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_PRIVACY_SETTINGS" = "Ota lukukuittaukset käyttöön yksityisyysasetuksissasi.";
+
+/* Header for upgrade experience */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_TITLE" = "Esittelemme lukukuittaukset";
 
 /* Description of video calling to upgrading (existing) users */
 "UPGRADE_EXPERIENCE_VIDEO_DESCRIPTION" = "Signal tukee nyt turvallisia videopuheluita. Aloita puhelu kuten ennenkin, sitten vain napauta kamerakuvaketta ja vilkuta hei.";
@@ -1552,8 +1714,8 @@
 /* button text during registration to request another SMS code be sent */
 "VERIFICATION_CHALLENGE_SUBMIT_AGAIN" = "Lähetä koodi uudelleen tekstiviestinä";
 
-/* button text during registration to submit your SMS verification code */
-"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "Lähetä vahvistuskoodi";
+/* button text during registration to submit your SMS verification code. */
+"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "Lähetä";
 
 /* Label indicating the phone number currently being verified. */
 "VERIFICATION_PHONE_NUMBER_FORMAT" = "Syötä vahvistuskoodi, jonka lähetimme numeroon %@.";

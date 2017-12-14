@@ -6,20 +6,24 @@
 #import "Cryptography.h"
 #import "OWSDeviceProvisioningURLParser.h"
 #import "OWSLinkedDevicesTableViewController.h"
-#import "OWSProfileManager.h"
 #import "Signal-Swift.h"
+#import <SignalMessaging/OWSProfileManager.h>
 #import <SignalServiceKit/ECKeyPair+OWSPrivateKey.h>
+#import <SignalServiceKit/OWSDevice.h>
 #import <SignalServiceKit/OWSDeviceProvisioner.h>
 #import <SignalServiceKit/OWSIdentityManager.h>
+#import <SignalServiceKit/OWSReadReceiptManager.h>
 #import <SignalServiceKit/TSAccountManager.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface OWSLinkDeviceViewController ()
 
-@property (strong, nonatomic) IBOutlet UIView *qrScanningView;
-@property (strong, nonatomic) IBOutlet UILabel *scanningInstructionsLabel;
-@property (strong, nonatomic) OWSQRCodeScanningViewController *qrScanningController;
+@property (nonatomic) YapDatabaseConnection *dbConnection;
+@property (nonatomic) IBOutlet UIView *qrScanningView;
+@property (nonatomic) IBOutlet UILabel *scanningInstructionsLabel;
+@property (nonatomic) OWSQRCodeScanningViewController *qrScanningController;
+@property (nonatomic, readonly) OWSReadReceiptManager *readReceiptManager;
 
 @end
 
@@ -28,6 +32,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+
+    self.dbConnection = [[TSStorageManager sharedManager] newDatabaseConnection];
 
     // HACK to get full width preview layer
     CGRect oldFrame = self.qrScanningView.frame;
@@ -44,6 +50,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (OWSProfileManager *)profileManager
 {
     return [OWSProfileManager sharedManager];
+}
+
+- (OWSReadReceiptManager *)readReceiptManager
+{
+    return [OWSReadReceiptManager sharedManager];
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -135,19 +146,24 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)provisionWithParser:(OWSDeviceProvisioningURLParser *)parser
 {
+    // Optimistically set this flag.
+    [OWSDeviceManager.sharedManager setMayHaveLinkedDevices:YES dbConnection:self.dbConnection];
+
     ECKeyPair *_Nullable identityKeyPair = [[OWSIdentityManager sharedManager] identityKeyPair];
     OWSAssert(identityKeyPair);
     NSData *myPublicKey = identityKeyPair.publicKey;
     NSData *myPrivateKey = identityKeyPair.ows_privateKey;
     NSString *accountIdentifier = [TSAccountManager localNumber];
     NSData *myProfileKeyData = self.profileManager.localProfileKey.keyData;
+    BOOL areReadReceiptsEnabled = self.readReceiptManager.areReadReceiptsEnabled;
 
     OWSDeviceProvisioner *provisioner = [[OWSDeviceProvisioner alloc] initWithMyPublicKey:myPublicKey
                                                                              myPrivateKey:myPrivateKey
                                                                            theirPublicKey:parser.publicKey
                                                                    theirEphemeralDeviceId:parser.ephemeralDeviceId
                                                                         accountIdentifier:accountIdentifier
-                                                                               profileKey:myProfileKeyData];
+                                                                               profileKey:myProfileKeyData
+                                                                      readReceiptsEnabled:areReadReceiptsEnabled];
 
     [provisioner provisionWithSuccess:^{
         DDLogInfo(@"Successfully provisioned device.");
@@ -169,14 +185,14 @@ NS_ASSUME_NONNULL_BEGIN
         }];
 }
 
-- (UIAlertController *)retryAlertControllerWithError:(NSError *)error retryBlock:(void (^)())retryBlock
+- (UIAlertController *)retryAlertControllerWithError:(NSError *)error retryBlock:(void (^)(void))retryBlock
 {
     NSString *title = NSLocalizedString(@"LINKING_DEVICE_FAILED_TITLE", @"Alert Title");
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title
                                                                              message:error.localizedDescription
                                                                       preferredStyle:UIAlertControllerStyleAlert];
 
-    UIAlertAction *retryAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"RETRY_BUTTON_TEXT", nil)
+    UIAlertAction *retryAction = [UIAlertAction actionWithTitle:[CommonStrings retryButton]
                                                           style:UIAlertActionStyleDefault
                                                         handler:^(UIAlertAction *action) {
                                                             retryBlock();

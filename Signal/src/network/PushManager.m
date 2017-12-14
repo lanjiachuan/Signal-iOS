@@ -4,16 +4,19 @@
 
 #import "PushManager.h"
 #import "AppDelegate.h"
-#import "NSData+ows_StripToken.h"
+#import "NotificationsManager.h"
 #import "OWSContactsManager.h"
-#import "PropertyListPreferences.h"
 #import "Signal-Swift.h"
+#import "SignalApp.h"
 #import "ThreadUtil.h"
-#import <SignalServiceKit/NSDate+millisecondTimeStamp.h>
+#import <SignalServiceKit/NSDate+OWS.h>
+#import <SignalServiceKit/OWSDevice.h>
 #import <SignalServiceKit/OWSMessageReceiver.h>
 #import <SignalServiceKit/OWSMessageSender.h>
+#import <SignalServiceKit/OWSReadReceiptManager.h>
 #import <SignalServiceKit/OWSSignalService.h>
 #import <SignalServiceKit/TSAccountManager.h>
+#import <SignalServiceKit/TSIncomingMessage.h>
 #import <SignalServiceKit/TSOutgoingMessage.h>
 #import <SignalServiceKit/TSSocketManager.h>
 
@@ -29,12 +32,12 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
 
 @interface PushManager ()
 
-@property (nonatomic) TOCFutureSource *registerWithServerFutureSource;
 @property (nonatomic) NSMutableArray *currentNotifications;
 @property (nonatomic) UIBackgroundTaskIdentifier callBackgroundTask;
 @property (nonatomic, readonly) OWSMessageSender *messageSender;
 @property (nonatomic, readonly) OWSMessageFetcherJob *messageFetcherJob;
 @property (nonatomic, readonly) CallUIAdapter *callUIAdapter;
+@property (nonatomic, readonly) NotificationsManager *notificationsManager;
 
 @end
 
@@ -51,18 +54,18 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
 
 - (instancetype)initDefault
 {
-    return [self initWithNetworkManager:[Environment getCurrent].networkManager
-                         storageManager:[TSStorageManager sharedManager]
-                          callUIAdapter:[Environment getCurrent].callService.callUIAdapter
-                        messageReceiver:[OWSMessageReceiver sharedInstance]
-                          messageSender:[Environment getCurrent].messageSender];
+    return [self initWithMessageFetcherJob:SignalApp.sharedApp.messageFetcherJob
+                            storageManager:[TSStorageManager sharedManager]
+                             callUIAdapter:SignalApp.sharedApp.callService.callUIAdapter
+                             messageSender:[Environment current].messageSender
+                      notificationsManager:SignalApp.sharedApp.notificationsManager];
 }
 
-- (instancetype)initWithNetworkManager:(TSNetworkManager *)networkManager
-                        storageManager:(TSStorageManager *)storageManager
-                         callUIAdapter:(CallUIAdapter *)callUIAdapter
-                       messageReceiver:(OWSMessageReceiver *)messageReceiver
-                         messageSender:(OWSMessageSender *)messageSender
+- (instancetype)initWithMessageFetcherJob:(OWSMessageFetcherJob *)messageFetcherJob
+                           storageManager:(TSStorageManager *)storageManager
+                            callUIAdapter:(CallUIAdapter *)callUIAdapter
+                            messageSender:(OWSMessageSender *)messageSender
+                     notificationsManager:(NotificationsManager *)notificationsManager
 {
     self = [super init];
     if (!self) {
@@ -71,30 +74,45 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
 
     _callUIAdapter = callUIAdapter;
     _messageSender = messageSender;
-
-    OWSSignalService *signalService = [OWSSignalService sharedInstance];
-    _messageFetcherJob = [[OWSMessageFetcherJob alloc] initWithMessageReceiver:messageReceiver
-                                                                networkManager:networkManager
-                                                                 signalService:signalService];
-
+    _messageFetcherJob = messageFetcherJob;
     _callBackgroundTask = UIBackgroundTaskInvalid;
+    // TODO: consolidate notification tracking with NotificationsManager, which also maintains a list of notifications.
     _currentNotifications = [NSMutableArray array];
+    _notificationsManager = notificationsManager;
 
     OWSSingletonAssert();
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(handleMessageRead:)
+                                                 name:kIncomingMessageMarkedAsReadNotification
+                                               object:nil];
 
     return self;
 }
 
+- (void)handleMessageRead:(NSNotification *)notification
+{
+    OWSAssert([NSThread isMainThread]);
+
+    if ([notification.object isKindOfClass:[TSIncomingMessage class]]) {
+        TSIncomingMessage *message = (TSIncomingMessage *)notification.object;
+
+        DDLogDebug(@"%@ canceled notification for message:%@", self.logTag, message);
+        [self cancelNotificationsWithThreadId:message.uniqueThreadId];
+    }
+}
+
 #pragma mark Manage Incoming Push
 
-- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
-    DDLogInfo(@"received: %s", __PRETTY_FUNCTION__);
+- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo
+{
+    DDLogInfo(@"%@ received remote notification", self.logTag);
 
-    [self.messageFetcherJob runAsync];
+    [self.messageFetcherJob run];
 }
 
 - (void)applicationDidBecomeActive {
-    [self.messageFetcherJob runAsync];
+    [self.messageFetcherJob run];
 }
 
 /**
@@ -102,31 +120,45 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
  * "content-available:1" pushes if there is no "voip" token registered
  *
  */
-
 - (void)application:(UIApplication *)application
     didReceiveRemoteNotification:(NSDictionary *)userInfo
-          fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
-    DDLogInfo(@"received: %s", __PRETTY_FUNCTION__);
+          fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
+{
+    DDLogInfo(@"%@ received content-available push", self.logTag);
+
+    // If we want to re-introduce silent pushes we can remove this assert.
+    OWSFail(@"Unexpected content-available push.");
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 20 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
       completionHandler(UIBackgroundFetchResultNewData);
     });
 }
 
-- (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification {
-    DDLogInfo(@"received: %s", __PRETTY_FUNCTION__);
+- (void)application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification
+{
+    OWSAssert([NSThread isMainThread]);
+    DDLogInfo(@"%@ launched from local notification", self.logTag);
 
-    NSString *threadId = notification.userInfo[Signal_Thread_UserInfo_Key];
-    if (threadId && [TSThread fetchObjectWithUniqueID:threadId]) {
-        [Environment messageThreadId:threadId];
+    NSString *_Nullable threadId = notification.userInfo[Signal_Thread_UserInfo_Key];
+
+    if (threadId) {
+        [SignalApp.sharedApp presentConversationForThreadId:threadId];
+    } else {
+        OWSFail(@"%@ threadId was unexpectedly nil in %s", self.logTag, __PRETTY_FUNCTION__);
     }
+
+    // We only want to receive a single local notification per launch.
+    [application cancelAllLocalNotifications];
+    [self.currentNotifications removeAllObjects];
+    [self.notificationsManager clearAllNotifications];
 }
 
 - (void)application:(UIApplication *)application
     handleActionWithIdentifier:(NSString *)identifier
           forLocalNotification:(UILocalNotification *)notification
-             completionHandler:(void (^)())completionHandler {
-    DDLogInfo(@"received: %s", __PRETTY_FUNCTION__);
+             completionHandler:(void (^)(void))completionHandler
+{
+    DDLogInfo(@"%@ in %s", self.logTag, __FUNCTION__);
 
     [self application:application
         handleActionWithIdentifier:identifier
@@ -139,9 +171,9 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
     handleActionWithIdentifier:(NSString *)identifier
           forLocalNotification:(UILocalNotification *)notification
               withResponseInfo:(NSDictionary *)responseInfo
-             completionHandler:(void (^)())completionHandler
+             completionHandler:(void (^)(void))completionHandler
 {
-    DDLogInfo(@"%@ handling action with identifier: %@", self.tag, identifier);
+    DDLogInfo(@"%@ handling action with identifier: %@", self.logTag, identifier);
 
     if ([identifier isEqualToString:Signal_Message_Reply_Identifier]) {
         NSString *threadId = notification.userInfo[Signal_Thread_UserInfo_Key];
@@ -175,13 +207,13 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
     } else if ([identifier isEqualToString:PushManagerActionsAcceptCall]) {
         NSString *localIdString = notification.userInfo[PushManagerUserInfoKeysLocalCallId];
         if (!localIdString) {
-            DDLogError(@"%@ missing localIdString.", self.tag);
+            DDLogError(@"%@ missing localIdString.", self.logTag);
             return;
         }
 
         NSUUID *localId = [[NSUUID alloc] initWithUUIDString:localIdString];
         if (!localId) {
-            DDLogError(@"%@ localIdString failed to parse as UUID.", self.tag);
+            DDLogError(@"%@ localIdString failed to parse as UUID.", self.logTag);
             return;
         }
 
@@ -190,13 +222,13 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
     } else if ([identifier isEqualToString:PushManagerActionsDeclineCall]) {
         NSString *localIdString = notification.userInfo[PushManagerUserInfoKeysLocalCallId];
         if (!localIdString) {
-            DDLogError(@"%@ missing localIdString.", self.tag);
+            DDLogError(@"%@ missing localIdString.", self.logTag);
             return;
         }
 
         NSUUID *localId = [[NSUUID alloc] initWithUUIDString:localIdString];
         if (!localId) {
-            DDLogError(@"%@ localIdString failed to parse as UUID.", self.tag);
+            DDLogError(@"%@ localIdString failed to parse as UUID.", self.logTag);
             return;
         }
 
@@ -205,7 +237,7 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
     } else if ([identifier isEqualToString:PushManagerActionsCallBack]) {
         NSString *recipientId = notification.userInfo[PushManagerUserInfoKeysCallBackSignalRecipientId];
         if (!recipientId) {
-            DDLogError(@"%@ missing call back id", self.tag);
+            DDLogError(@"%@ missing call back id", self.logTag);
             return;
         }
 
@@ -213,17 +245,27 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
         completionHandler();
     } else if ([identifier isEqualToString:PushManagerActionsShowThread]) {
         NSString *threadId = notification.userInfo[Signal_Thread_UserInfo_Key];
-        [Environment messageThreadId:threadId];
+
+        if (threadId) {
+            [SignalApp.sharedApp presentConversationForThreadId:threadId];
+        } else {
+            OWSFail(@"%@ threadId was unexpectedly nil in action with identifier: %@", self.logTag, identifier);
+        }
         completionHandler();
     } else {
-        OWSFail(@"%@ Unhandled action with identifier: %@", self.tag, identifier);
+        OWSFail(@"%@ Unhandled action with identifier: %@", self.logTag, identifier);
         NSString *threadId = notification.userInfo[Signal_Thread_UserInfo_Key];
-        [Environment messageThreadId:threadId];
+        if (threadId) {
+            [SignalApp.sharedApp presentConversationForThreadId:threadId];
+        } else {
+            OWSFail(@"%@ threadId was unexpectedly nil in action with identifier: %@", self.logTag, identifier);
+        }
         completionHandler();
     }
 }
 
-- (void)markAllInThreadAsRead:(NSDictionary *)userInfo completionHandler:(void (^)())completionHandler {
+- (void)markAllInThreadAsRead:(NSDictionary *)userInfo completionHandler:(void (^)(void))completionHandler
+{
     NSString *threadId = userInfo[Signal_Thread_UserInfo_Key];
 
     TSThread *thread = [TSThread fetchObjectWithUniqueID:threadId];
@@ -234,88 +276,11 @@ NSString *const Signal_Message_MarkAsRead_Identifier = @"Signal_Message_MarkAsRe
             [thread markAllAsReadWithTransaction:transaction];
         }
         completionBlock:^{
-            [[[Environment getCurrent] signalsViewController] updateInboxCountLabel];
+            [SignalApp.sharedApp.homeViewController updateInboxCountLabel];
             [self cancelNotificationsWithThreadId:threadId];
 
             completionHandler();
         }];
-}
-
-#pragma mark PushKit
-
-- (void)pushRegistry:(PKPushRegistry *)registry
-    didUpdatePushCredentials:(PKPushCredentials *)credentials
-                     forType:(NSString *)type {
-    [[PushManager sharedManager].pushKitNotificationFutureSource trySetResult:[credentials.token ows_tripToken]];
-}
-
-- (void)pushRegistry:(PKPushRegistry *)registry
-    didReceiveIncomingPushWithPayload:(PKPushPayload *)payload
-                              forType:(NSString *)type {
-
-    DDLogInfo(@"received: %s", __PRETTY_FUNCTION__);
-
-    [self application:[UIApplication sharedApplication] didReceiveRemoteNotification:payload.dictionaryPayload];
-}
-
-- (TOCFuture *)registerPushKitNotificationFuture {
-    if ([self supportsVOIPPush]) {
-        self.pushKitNotificationFutureSource = [TOCFutureSource new];
-        PKPushRegistry *voipRegistry         = [[PKPushRegistry alloc] initWithQueue:dispatch_get_main_queue()];
-        voipRegistry.delegate                = self;
-        voipRegistry.desiredPushTypes        = [NSSet setWithObject:PKPushTypeVoIP];
-        return self.pushKitNotificationFutureSource.future;
-    } else {
-        TOCFutureSource *futureSource = [TOCFutureSource new];
-        [futureSource trySetResult:nil];
-        [Environment.preferences setHasRegisteredVOIPPush:FALSE];
-        return futureSource.future;
-    }
-}
-
-- (BOOL)supportsVOIPPush {
-    if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(8, 2)) {
-        return YES;
-    } else {
-        return NO;
-    }
-}
-
-#pragma mark Register device for Push Notification locally
-
-- (TOCFuture *)registerPushNotificationFuture {
-    self.pushNotificationFutureSource = [TOCFutureSource new];
-    [UIApplication.sharedApplication registerForRemoteNotifications];
-    return self.pushNotificationFutureSource.future;
-}
-
-- (void)requestPushTokenWithSuccess:(pushTokensSuccessBlock)success failure:(failedPushRegistrationBlock)failure {
-    AssertIsOnMainThread();
-
-    if (!self.wantRemoteNotifications) {
-        DDLogWarn(@"%@ Using fake push tokens", self.tag);
-        success(@"fakePushToken", @"fakeVoipToken");
-        return;
-    }
-
-    TOCFuture *requestPushTokenFuture = [self registerPushNotificationFuture];
-
-    [requestPushTokenFuture thenDo:^(NSData *pushTokenData) {
-      NSString *pushToken = [pushTokenData ows_tripToken];
-      TOCFuture *pushKit  = [self registerPushKitNotificationFuture];
-
-      [pushKit thenDo:^(NSString *voipToken) {
-        success(pushToken, voipToken);
-      }];
-
-      [pushKit catchDo:^(NSError *error) {
-        failure(error);
-      }];
-    }];
-
-    [requestPushTokenFuture catchDo:^(NSError *error) {
-      failure(error);
-    }];
 }
 
 - (UIUserNotificationCategory *)fullNewMessageNotificationCategory {
@@ -442,20 +407,13 @@ NSString *const PushManagerUserInfoKeysCallBackSignalRecipientId = @"PushManager
 
 #pragma mark Util
 
-- (BOOL)wantRemoteNotifications {
-#if TARGET_IPHONE_SIMULATOR
-    return NO;
-#else
-    return YES;
-#endif
-}
-
 - (int)allNotificationTypes {
     return UIUserNotificationTypeAlert | UIUserNotificationTypeSound | UIUserNotificationTypeBadge;
 }
 
-- (void)validateUserNotificationSettings
+- (UIUserNotificationSettings *)userNotificationSettings
 {
+    DDLogDebug(@"%@ registering user notification settings", self.logTag);
     UIUserNotificationSettings *settings = [UIUserNotificationSettings
         settingsForTypes:(UIUserNotificationType)[self allNotificationTypes]
               categories:[NSSet setWithObjects:[self fullNewMessageNotificationCategory],
@@ -465,7 +423,7 @@ NSString *const PushManagerUserInfoKeysCallBackSignalRecipientId = @"PushManager
                                 [self signalMissedCallWithNoLongerVerifiedIdentityChangeCategory],
                                 nil]];
 
-    [UIApplication.sharedApplication registerUserNotificationSettings:settings];
+    return settings;
 }
 
 - (BOOL)applicationIsActive {
@@ -478,15 +436,23 @@ NSString *const PushManagerUserInfoKeysCallBackSignalRecipientId = @"PushManager
     return NO;
 }
 
+// TODO: consolidate notification tracking with NotificationsManager, which also maintains a list of notifications.
 - (void)presentNotification:(UILocalNotification *)notification checkForCancel:(BOOL)checkForCancel
 {
     dispatch_async(dispatch_get_main_queue(), ^{
         NSString *threadId = notification.userInfo[Signal_Thread_UserInfo_Key];
         if (checkForCancel && threadId != nil) {
-            // The longer we wait, the more obsolete notifications we can suppress -
-            // but the more lag we introduce to notification delivery.
-            const CGFloat kDelaySeconds = 0.5f;
-            notification.fireDate = [NSDate dateWithTimeIntervalSinceNow:kDelaySeconds];
+            if ([[OWSDeviceManager sharedManager] hasReceivedSyncMessageInLastSeconds:60.f]) {
+                // "If you’ve heard from desktop in last minute, wait 5 seconds."
+                //
+                // This provides a window in which we can cancel notifications
+                // already viewed on desktop before they are presented here.
+                const CGFloat kDelaySeconds = 5.f;
+                notification.fireDate = [NSDate dateWithTimeIntervalSinceNow:kDelaySeconds];
+            } else {
+                notification.fireDate = [NSDate new];
+            }
+
             notification.timeZone = [NSTimeZone localTimeZone];
         }
 
@@ -495,6 +461,7 @@ NSString *const PushManagerUserInfoKeysCallBackSignalRecipientId = @"PushManager
     });
 }
 
+// TODO: consolidate notification tracking with NotificationsManager, which also maintains a list of notifications.
 - (void)cancelNotificationsWithThreadId:(NSString *)threadId
 {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -517,7 +484,7 @@ NSString *const PushManagerUserInfoKeysCallBackSignalRecipientId = @"PushManager
 
 - (NSString *)tag
 {
-    return self.class.tag;
+    return self.class.logTag;
 }
 
 @end

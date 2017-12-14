@@ -6,8 +6,8 @@
 #import "OWSContactsManager.h"
 #import "OWSNavigationController.h"
 #import "Signal-Swift.h"
-#import "UIUtil.h"
 #import <MobileCoreServices/UTCoreTypes.h>
+#import <SignalMessaging/UIUtil.h>
 #import <SignalServiceKit/PhoneNumber.h>
 #import <SignalServiceKit/TSGroupModel.h>
 #import <SignalServiceKit/TSGroupThread.h>
@@ -89,9 +89,9 @@ NS_ASSUME_NONNULL_BEGIN
 
     UIImagePickerController *picker = [[UIImagePickerController alloc] init];
     picker.delegate = self;
-    picker.sourceType = UIImagePickerControllerSourceTypeSavedPhotosAlbum;
+    picker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
 
-    if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeSavedPhotosAlbum]) {
+    if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypePhotoLibrary]) {
         picker.mediaTypes = [[NSArray alloc] initWithObjects:(NSString *)kUTTypeImage, nil];
         [self.delegate.fromViewController presentViewController:picker
                                                        animated:YES
@@ -130,7 +130,9 @@ NS_ASSUME_NONNULL_BEGIN
                                    CropScaleImageViewController *vc = [[CropScaleImageViewController alloc]
                                         initWithSrcImage:rawAvatar
                                        successCompletion:^(UIImage *_Nonnull dstImage) {
-                                           [self.delegate avatarDidChange:dstImage];
+                                           dispatch_async(dispatch_get_main_queue(), ^{
+                                               [self.delegate avatarDidChange:dstImage];
+                                           });
                                        }];
                                    [self.delegate.fromViewController
                                        presentViewController:vc

@@ -6,7 +6,7 @@
 #import "OWSDeviceTableViewCell.h"
 #import "OWSLinkDeviceViewController.h"
 #import "Signal-Swift.h"
-#import "UIViewController+CameraPermissions.h"
+#import "UIViewController+Permissions.h"
 #import <SignalServiceKit/NSTimer+OWS.h>
 #import <SignalServiceKit/OWSDevice.h>
 #import <SignalServiceKit/OWSDevicesService.h>
@@ -20,10 +20,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface OWSLinkedDevicesTableViewController ()
 
-@property YapDatabaseConnection *dbConnection;
-@property YapDatabaseViewMappings *deviceMappings;
-@property NSTimer *pollingRefreshTimer;
-@property BOOL isExpectingMoreDevices;
+@property (nonatomic) YapDatabaseConnection *dbConnection;
+@property (nonatomic) YapDatabaseViewMappings *deviceMappings;
+@property (nonatomic) NSTimer *pollingRefreshTimer;
+@property (nonatomic) BOOL isExpectingMoreDevices;
 
 @end
 
@@ -46,6 +46,14 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 70;
 
+    // Fix a bug that only affects iOS 11.0.x and 11.1.x.
+    if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(11, 0) && !SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(11, 2)) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpartial-availability"
+        self.tableView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+#pragma clang diagnostic pop
+    }
+
     self.dbConnection = [[TSStorageManager sharedManager] newDatabaseConnection];
     [self.dbConnection beginLongLivedReadTransaction];
     self.deviceMappings = [[YapDatabaseViewMappings alloc] initWithGroups:@[ TSSecondaryDevicesGroup ]
@@ -58,7 +66,10 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
                                              selector:@selector(yapDatabaseModified:)
                                                  name:YapDatabaseModifiedNotification
                                                object:self.dbConnection.database];
-
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(yapDatabaseModified:)
+                                                 name:YapDatabaseModifiedExternallyNotification
+                                               object:self.dbConnection.database];
 
     self.refreshControl = [UIRefreshControl new];
     [self.refreshControl addTarget:self action:@selector(refreshDevices) forControlEvents:UIControlEventValueChanged];
@@ -131,6 +142,15 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
     __weak typeof(self) wself = self;
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [[OWSDevicesService new] getDevicesWithSuccess:^(NSArray<OWSDevice *> *devices) {
+            // If we have more than one device; we may have a linked device.
+            if (devices.count > 1) {
+                // Setting this flag here shouldn't be necessary, but we do so
+                // because the "cost" is low and it will improve robustness.
+                [OWSDeviceManager.sharedManager
+                    setMayHaveLinkedDevices:YES
+                               dbConnection:[[TSStorageManager sharedManager] newDatabaseConnection]];
+            }
+
             if (devices.count > [OWSDevice numberOfKeysInCollection]) {
                 // Got our new device, we can stop refreshing.
                 wself.isExpectingMoreDevices = NO;
@@ -158,9 +178,7 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
                                                         message:error.localizedDescription
                                                  preferredStyle:UIAlertControllerStyleAlert];
 
-                NSString *retryTitle = NSLocalizedString(
-                    @"RETRY_BUTTON_TEXT", @"Generic text for button that retries whatever the last action was.");
-                UIAlertAction *retryAction = [UIAlertAction actionWithTitle:retryTitle
+                UIAlertAction *retryAction = [UIAlertAction actionWithTitle:[CommonStrings retryButton]
                                                                       style:UIAlertActionStyleDefault
                                                                     handler:^(UIAlertAction *action) {
                                                                         [wself refreshDevices];
@@ -245,7 +263,6 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
             return (NSInteger)[self.deviceMappings numberOfItemsInSection:(NSUInteger)section];
         case OWSLinkedDevicesTableViewControllerSectionAddDevice:
             return 1;
-
         default:
             DDLogError(@"Unknown section: %ld", (long)section);
             return 0;
@@ -258,7 +275,10 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
 
     if (indexPath.section == OWSLinkedDevicesTableViewControllerSectionAddDevice)
     {
-        [self ows_askForCameraPermissions:^{
+        [self ows_askForCameraPermissions:^(BOOL granted) {
+            if (!granted) {
+                return;
+            }
             [self performSegueWithIdentifier:@"LinkDeviceSegue" sender:self];
         }];
     }
@@ -327,7 +347,7 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
     }
 }
 
-- (void)touchedUnlinkControlForDevice:(OWSDevice *)device success:(void (^)())successCallback
+- (void)touchedUnlinkControlForDevice:(OWSDevice *)device success:(void (^)(void))successCallback
 {
     NSString *confirmationTitleFormat
         = NSLocalizedString(@"UNLINK_CONFIRMATION_ALERT_TITLE", @"Alert title for confirming device deletion");
@@ -355,7 +375,7 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
     });
 }
 
-- (void)unlinkDevice:(OWSDevice *)device success:(void (^)())successCallback
+- (void)unlinkDevice:(OWSDevice *)device success:(void (^)(void))successCallback
 {
     [[OWSDevicesService new] unlinkDevice:device
                                   success:successCallback
@@ -368,7 +388,7 @@ int const OWSLinkedDevicesTableViewControllerSectionAddDevice = 1;
                                                                        preferredStyle:UIAlertControllerStyleAlert];
 
                                       UIAlertAction *retryAction =
-                                          [UIAlertAction actionWithTitle:NSLocalizedString(@"RETRY_BUTTON_TEXT", nil)
+                                          [UIAlertAction actionWithTitle:[CommonStrings retryButton]
                                                                    style:UIAlertActionStyleDefault
                                                                  handler:^(UIAlertAction *aaction) {
                                                                      [self unlinkDevice:device success:successCallback];

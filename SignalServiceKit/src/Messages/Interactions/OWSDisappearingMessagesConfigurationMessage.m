@@ -1,8 +1,9 @@
-//  Created by Michael Kirk on 9/25/16.
-//  Copyright © 2016 Open Whisper Systems. All rights reserved.
+//
+//  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
+//
 
 #import "OWSDisappearingMessagesConfigurationMessage.h"
-#import "NSDate+millisecondTimeStamp.h"
+#import "NSDate+OWS.h"
 #import "OWSDisappearingMessagesConfiguration.h"
 #import "OWSSignalServiceProtos.pb.h"
 
@@ -16,11 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation OWSDisappearingMessagesConfigurationMessage
 
-- (void)saveWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
+- (BOOL)shouldBeSaved
 {
-    // override superclass with no-op.
-    //
-    // There's no need to save this message, since it's not displayed to the user.
+    return NO;
 }
 
 - (instancetype)initWithConfiguration:(OWSDisappearingMessagesConfiguration *)configuration thread:(TSThread *)thread

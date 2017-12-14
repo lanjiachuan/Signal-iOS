@@ -3,6 +3,7 @@
 //
 
 import UIKit
+import SignalServiceKit
 
 @objc class AudioProgressView: UIView {
 
@@ -45,14 +46,9 @@ import UIKit
         }
     }
 
-    @available(*, unavailable, message:"use init() constructor instead.")
+    @available(*, unavailable, message:"use other constructor instead.")
     required init?(coder aDecoder: NSCoder) {
-        self.horizontalBarLayer = CAShapeLayer()
-        self.progressLayer = CAShapeLayer()
-
-        super.init(coder: aDecoder)
-
-        owsFail("\(self.tag) Invalid constructor")
+        fatalError("\(#function) is unimplemented.")
     }
 
     public required init() {

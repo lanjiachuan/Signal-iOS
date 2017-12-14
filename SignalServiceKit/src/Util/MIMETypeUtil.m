@@ -3,10 +3,14 @@
 //
 
 #import "MIMETypeUtil.h"
+#import "OWSFileSystem.h"
+
 #if TARGET_OS_IPHONE
 #import <MobileCoreServices/MobileCoreServices.h>
+
 #else
 #import <CoreServices/CoreServices.h>
+
 #endif
 
 NS_ASSUME_NONNULL_BEGIN
@@ -15,6 +19,11 @@ NSString *const OWSMimeTypeApplicationOctetStream = @"application/octet-stream";
 NSString *const OWSMimeTypeImagePng = @"image/png";
 NSString *const OWSMimeTypeOversizeTextMessage = @"text/x-signal-plain";
 NSString *const OWSMimeTypeUnknownForTests = @"unknown/mimetype";
+
+NSString *const kOversizeTextAttachmentUTI = @"org.whispersystems.oversize-text-attachment";
+NSString *const kOversizeTextAttachmentFileExtension = @"txt";
+NSString *const kUnknownTestAttachmentUTI = @"org.whispersystems.unknown";
+NSString *const kSyncMessageFileExtension = @"bin";
 
 @implementation MIMETypeUtil
 
@@ -202,19 +211,20 @@ NSString *const OWSMimeTypeUnknownForTests = @"unknown/mimetype";
 }
 
 + (BOOL)isSupportedVideoFile:(NSString *)filePath {
-    return [[self supportedVideoExtensionTypesToMIMETypes] objectForKey:[filePath pathExtension]] != nil;
+    return [[self supportedVideoExtensionTypesToMIMETypes] objectForKey:filePath.pathExtension.lowercaseString] != nil;
 }
 
 + (BOOL)isSupportedAudioFile:(NSString *)filePath {
-    return [[self supportedAudioExtensionTypesToMIMETypes] objectForKey:[filePath pathExtension]] != nil;
+    return [[self supportedAudioExtensionTypesToMIMETypes] objectForKey:filePath.pathExtension.lowercaseString] != nil;
 }
 
 + (BOOL)isSupportedImageFile:(NSString *)filePath {
-    return [[self supportedImageExtensionTypesToMIMETypes] objectForKey:[filePath pathExtension]] != nil;
+    return [[self supportedImageExtensionTypesToMIMETypes] objectForKey:filePath.pathExtension.lowercaseString] != nil;
 }
 
 + (BOOL)isSupportedAnimatedFile:(NSString *)filePath {
-    return [[self supportedAnimatedExtensionTypesToMIMETypes] objectForKey:[filePath pathExtension]] != nil;
+    return
+        [[self supportedAnimatedExtensionTypesToMIMETypes] objectForKey:filePath.pathExtension.lowercaseString] != nil;
 }
 
 + (nullable NSString *)getSupportedExtensionFromVideoMIMEType:(NSString *)supportedMIMEType
@@ -311,18 +321,8 @@ NSString *const OWSMimeTypeUnknownForTests = @"unknown/mimetype";
             // Store the file in a subdirectory whose name is the uniqueId of this attachment,
             // to avoid collisions between multiple attachments with the same name.
             NSString *attachmentFolderPath = [folder stringByAppendingPathComponent:uniqueId];
-            NSError *error = nil;
-            BOOL attachmentFolderPathExists = [[NSFileManager defaultManager] fileExistsAtPath:attachmentFolderPath];
-            if (!attachmentFolderPathExists) {
-                [[NSFileManager defaultManager] createDirectoryAtPath:attachmentFolderPath
-                                          withIntermediateDirectories:YES
-                                                           attributes:nil
-                                                                error:&error];
-                if (error) {
-                    DDLogError(@"Failed to create attachment directory: %@", error);
-                    OWSAssert(0);
-                    return nil;
-                }
+            if (![OWSFileSystem ensureDirectoryExists:attachmentFolderPath]) {
+                return nil;
             }
             return [attachmentFolderPath
                 stringByAppendingPathComponent:[NSString
@@ -451,7 +451,7 @@ NSString *const OWSMimeTypeUnknownForTests = @"unknown/mimetype";
     for (NSString *mimeType in mimeTypes) {
         NSString *_Nullable utiType = [self utiTypeForMIMEType:mimeType];
         if (!utiType) {
-            OWSFail(@"%@ unknown utiType for mimetype: %@", self.tag, mimeType);
+            OWSFail(@"%@ unknown utiType for mimetype: %@", self.logTag, mimeType);
             continue;
         }
         [result addObject:utiType];
@@ -1430,7 +1430,7 @@ NSString *const OWSMimeTypeUnknownForTests = @"unknown/mimetype";
             @"text/pascal" : @"pas",
             @"text/plain" : @"txt",
             @"text/plain-bas" : @"par",
-            @"text/prs.lines.tag" : @"dsc",
+            @"text/prs.lines.logTag" : @"dsc",
             @"text/richtext" : @"rtf",
             @"text/scriplet" : @"wsc",
             @"text/scriptlet" : @"sct",
@@ -1762,7 +1762,7 @@ NSString *const OWSMimeTypeUnknownForTests = @"unknown/mimetype";
             @"dp" : @"application/vnd.osgi.dp",
             @"dpg" : @"application/vnd.dpgraph",
             @"dra" : @"audio/vnd.dra",
-            @"dsc" : @"text/prs.lines.tag",
+            @"dsc" : @"text/prs.lines.logTag",
             @"dssc" : @"application/dssc+der",
             @"dtb" : @"application/x-dtbook+xml",
             @"dtd" : @"application/xml-dtd",
@@ -2598,18 +2598,6 @@ NSString *const OWSMimeTypeUnknownForTests = @"unknown/mimetype";
     NSString *_Nullable utiType = (__bridge_transfer NSString *)UTTypeCreatePreferredIdentifierForTag(
         kUTTagClassFilenameExtension, (__bridge CFStringRef)fileExtension, NULL);
     return utiType;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

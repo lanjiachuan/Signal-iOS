@@ -3,6 +3,7 @@
 //
 
 #import "OWSAnalytics.h"
+#import "AppContext.h"
 #import "OWSQueues.h"
 #import "TSStorageManager.h"
 #import <CocoaLumberjack/CocoaLumberjack.h>
@@ -128,7 +129,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
         // * There's no network available.
         // * There's already a sync request in flight.
         if (!self.reachability.isReachable) {
-            DDLogVerbose(@"%@ Not reachable", self.tag);
+            DDLogVerbose(@"%@ Not reachable", self.logTag);
             return;
         }
         if (self.hasRequestInFlight) {
@@ -169,10 +170,10 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
         [self submitEvent:eventDictionary
             eventKey:eventKey
             success:^{
-                DDLogDebug(@"%@ sendEvent[critical] succeeded: %@", self.tag, eventKey);
+                DDLogDebug(@"%@ sendEvent[critical] succeeded: %@", self.logTag, eventKey);
             }
             failure:^{
-                DDLogError(@"%@ sendEvent[critical] failed: %@", self.tag, eventKey);
+                DDLogError(@"%@ sendEvent[critical] failed: %@", self.logTag, eventKey);
             }];
     } else {
         self.hasRequestInFlight = YES;
@@ -184,7 +185,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
                     return;
                 }
                 isComplete = YES;
-                DDLogDebug(@"%@ sendEvent succeeded: %@", self.tag, eventKey);
+                DDLogDebug(@"%@ sendEvent succeeded: %@", self.logTag, eventKey);
                 dispatch_async(self.serialQueue, ^{
                     self.hasRequestInFlight = NO;
 
@@ -205,7 +206,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
                     return;
                 }
                 isComplete = YES;
-                DDLogError(@"%@ sendEvent failed: %@", self.tag, eventKey);
+                DDLogError(@"%@ sendEvent failed: %@", self.logTag, eventKey);
                 dispatch_async(self.serialQueue, ^{
                     self.hasRequestInFlight = NO;
 
@@ -221,20 +222,20 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
 
 - (void)submitEvent:(NSDictionary *)eventDictionary
            eventKey:(NSString *)eventKey
-            success:(void (^_Nonnull)())successBlock
-            failure:(void (^_Nonnull)())failureBlock
+            success:(void (^_Nonnull)(void))successBlock
+            failure:(void (^_Nonnull)(void))failureBlock
 {
     OWSAssert(eventDictionary);
     OWSAssert(eventKey);
     AssertOnDispatchQueue(self.serialQueue);
 
-    DDLogDebug(@"%@ submitting: %@", self.tag, eventKey);
+    DDLogDebug(@"%@ submitting: %@", self.logTag, eventKey);
 
     __block UIBackgroundTaskIdentifier task;
-    task = [UIApplication.sharedApplication beginBackgroundTaskWithExpirationHandler:^{
+    task = [CurrentAppContext() beginBackgroundTaskWithExpirationHandler:^{
         failureBlock();
 
-        [UIApplication.sharedApplication endBackgroundTask:task];
+        [CurrentAppContext() endBackgroundTask:task];
     }];
 
     // Until we integrate with an analytics platform, behave as though all event delivery succeeds.
@@ -245,8 +246,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
         } else {
             failureBlock();
         }
-
-        [UIApplication.sharedApplication endBackgroundTask:task];
+        [CurrentAppContext() endBackgroundTask:task];
     });
 }
 
@@ -311,7 +311,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
         return;
     }
 
-    void (^addEvent)() = ^{
+    void (^addEvent)(void) = ^{
         // Add super properties.
         NSMutableDictionary *eventProperties = (properties ? [properties mutableCopy] : [NSMutableDictionary new]);
         [eventProperties addEntriesFromDictionary:self.eventSuperProperties];
@@ -319,7 +319,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
         NSDictionary *eventDictionary = [eventProperties copy];
         OWSAssert(eventDictionary);
         NSString *eventKey = [NSUUID UUID].UUIDString;
-        DDLogDebug(@"%@ enqueuing event: %@", self.tag, eventKey);
+        DDLogDebug(@"%@ enqueuing event: %@", self.logTag, eventKey);
 
         if (isCritical) {
             // Critical events should not be serialized or enqueued - they should be submitted immediately.
@@ -329,7 +329,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
             [self.dbConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
                 const int kMaxQueuedEvents = 5000;
                 if ([transaction numberOfKeysInCollection:kOWSAnalytics_EventsCollection] > kMaxQueuedEvents) {
-                    DDLogError(@"%@ Event queue overflow.", self.tag);
+                    DDLogError(@"%@ Event queue overflow.", self.logTag);
                     return;
                 }
 
@@ -375,7 +375,7 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
             logFlag = DDLogFlagError;
             break;
         default:
-            OWSAssert(0);
+            OWSFail(@"Unknown severity.");
             logFlag = DDLogFlagDebug;
             break;
     }
@@ -412,18 +412,6 @@ NSString *NSStringForOWSAnalyticsSeverity(OWSAnalyticsSeverity severity)
 - (void)appLaunchDidBegin
 {
     OWSProdInfo([OWSAnalyticsEvents appLaunch]);
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

@@ -3,33 +3,40 @@
 //
 
 #import "TSStorageManager.h"
+#import "AppContext.h"
 #import "NSData+Base64.h"
 #import "OWSAnalytics.h"
+#import "OWSBatchMessageProcessor.h"
 #import "OWSDisappearingMessagesFinder.h"
 #import "OWSFailedAttachmentDownloadsJob.h"
 #import "OWSFailedMessagesJob.h"
+#import "OWSFileSystem.h"
 #import "OWSIncomingMessageFinder.h"
-#import "OWSReadReceipt.h"
+#import "OWSMessageReceiver.h"
 #import "SignalRecipient.h"
 #import "TSAttachmentStream.h"
 #import "TSDatabaseSecondaryIndexes.h"
 #import "TSDatabaseView.h"
 #import "TSInteraction.h"
 #import "TSThread.h"
-#import <25519/Randomness.h>
+#import <Curve25519Kit/Randomness.h>
 #import <SAMKeychain/SAMKeychain.h>
-#import <SignalServiceKit/OWSMessageReceiver.h>
 #import <YapDatabase/YapDatabaseRelationship.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-NSString *const TSStorageManagerExceptionNameDatabasePasswordInaccessible = @"TSStorageManagerExceptionNameDatabasePasswordInaccessible";
-NSString *const TSStorageManagerExceptionNameDatabasePasswordInaccessibleWhileBackgrounded =
-    @"TSStorageManagerExceptionNameDatabasePasswordInaccessibleWhileBackgrounded";
-NSString *const TSStorageManagerExceptionNameDatabasePasswordUnwritable = @"TSStorageManagerExceptionNameDatabasePasswordUnwritable";
-NSString *const TSStorageManagerExceptionNameNoDatabase = @"TSStorageManagerExceptionNameNoDatabase";
+NSString *const TSStorageManagerExceptionName_DatabasePasswordInaccessible
+    = @"TSStorageManagerExceptionName_DatabasePasswordInaccessible";
+NSString *const TSStorageManagerExceptionName_DatabasePasswordInaccessibleWhileBackgrounded
+    = @"TSStorageManagerExceptionName_DatabasePasswordInaccessibleWhileBackgrounded";
+NSString *const TSStorageManagerExceptionName_DatabasePasswordUnwritable
+    = @"TSStorageManagerExceptionName_DatabasePasswordUnwritable";
+NSString *const TSStorageManagerExceptionName_NoDatabase = @"TSStorageManagerExceptionName_NoDatabase";
+NSString *const TSStorageManagerExceptionName_CouldNotMoveDatabaseFile
+    = @"TSStorageManagerExceptionName_CouldNotMoveDatabaseFile";
+NSString *const TSStorageManagerExceptionName_CouldNotCreateDatabaseDirectory
+    = @"TSStorageManagerExceptionName_CouldNotCreateDatabaseDirectory";
 
-static const NSString *const databaseName = @"Signal.sqlite";
 static NSString *keychainService          = @"TSKeyChainService";
 static NSString *keychainDBPassAccount    = @"TSDatabasePass";
 
@@ -186,6 +193,7 @@ void setDatabaseInitialized()
 
 - (nullable Class)unarchiver:(NSKeyedUnarchiver *)unarchiver cannotDecodeObjectOfClassName:(NSString *)name originalClasses:(NSArray<NSString *> *)classNames
 {
+    DDLogError(@"%@ Could not decode object: %@", self.logTag, name);
     OWSProdError([OWSAnalyticsEvents storageErrorCouldNotDecodeClass]);
     return [OWSUnknownObject class];
 }
@@ -200,10 +208,11 @@ void setDatabaseInitialized()
     static TSStorageManager *sharedManager = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedManager = [[self alloc] initDefault];
 #if TARGET_OS_IPHONE
-        [sharedManager protectSignalFiles];
+        [TSStorageManager protectSignalFiles];
 #endif
+
+        sharedManager = [[self alloc] initDefault];
     });
     return sharedManager;
 }
@@ -229,7 +238,7 @@ void setDatabaseInitialized()
             // Sleep to give analytics events time to be delivered.
             [NSThread sleepForTimeInterval:15.0f];
 
-            [NSException raise:TSStorageManagerExceptionNameNoDatabase format:@"Failed to initialize database."];
+            [NSException raise:TSStorageManagerExceptionName_NoDatabase format:@"Failed to initialize database."];
         }
 
         OWSSingletonAssert();
@@ -251,6 +260,7 @@ void setDatabaseInitialized()
     options.cipherKeyBlock = ^{
         return databasePassword;
     };
+    options.enableMultiProcessSupport = YES;
 
 #ifdef DEBUG
     _database = [[OWSDatabase alloc] initWithPath:[self dbPath]
@@ -297,14 +307,16 @@ void setDatabaseInitialized()
     };
 }
 
-- (void)setupDatabaseWithSafeBlockingMigrations:(void (^_Nonnull)())safeBlockingMigrationsBlock
+- (void)setupDatabaseWithSafeBlockingMigrations:(void (^_Nonnull)(void))safeBlockingMigrationsBlock
 {
     // Synchronously register extensions which are essential for views.
+    [TSDatabaseView registerCrossProcessNotifier];
     [TSDatabaseView registerThreadInteractionsDatabaseView];
     [TSDatabaseView registerThreadDatabaseView];
     [TSDatabaseView registerUnreadDatabaseView];
     [self.database registerExtension:[TSDatabaseSecondaryIndexes registerTimeStampIndex] withName:@"idx"];
     [OWSMessageReceiver syncRegisterDatabaseExtension:self.database];
+    [OWSBatchMessageProcessor syncRegisterDatabaseExtension:self.database];
 
     // See comments on OWSDatabaseConnection.
     //
@@ -330,10 +342,9 @@ void setDatabaseInitialized()
     [TSDatabaseView asyncRegisterThreadOutgoingMessagesDatabaseView];
     [TSDatabaseView asyncRegisterThreadSpecialMessagesDatabaseView];
 
-    // Register extensions which aren't essential for rendering threads async
+    // Register extensions which aren't essential for rendering threads async.
     [[OWSIncomingMessageFinder new] asyncRegisterExtension];
     [TSDatabaseView asyncRegisterSecondaryDevicesDatabaseView];
-    [OWSReadReceipt asyncRegisterIndexOnSenderIdAndTimestampWithDatabase:self.database];
     [OWSDisappearingMessagesFinder asyncRegisterDatabaseExtensions:self];
     OWSFailedMessagesJob *failedMessagesJob = [[OWSFailedMessagesJob alloc] initWithStorageManager:self];
     [failedMessagesJob asyncRegisterDatabaseExtensions];
@@ -342,35 +353,21 @@ void setDatabaseInitialized()
     [failedAttachmentDownloadsMessagesJob asyncRegisterDatabaseExtensions];
 
     // NOTE: [TSDatabaseView asyncRegistrationCompletion] ensures that
-    // kNSNotificationName_DatabaseViewRegistrationComplete is not fired until all
+    // DatabaseViewRegistrationCompleteNotification is not fired until all
     // of the async registrations are complete.
     [TSDatabaseView asyncRegistrationCompletion];
 }
 
-- (void)protectSignalFiles {
-    [self protectFolderAtPath:[TSAttachmentStream attachmentsFolder]];
-    [self protectFolderAtPath:[self dbPath]];
-    [self protectFolderAtPath:[[self dbPath] stringByAppendingString:@"-shm"]];
-    [self protectFolderAtPath:[[self dbPath] stringByAppendingString:@"-wal"]];
-}
++ (void)protectSignalFiles
+{
+    // The old database location was in the Document directory,
+    // so protect the database files individually.
+    [OWSFileSystem protectFolderAtPath:self.legacyDatabaseFilePath];
+    [OWSFileSystem protectFolderAtPath:self.legacyDatabaseFilePath_SHM];
+    [OWSFileSystem protectFolderAtPath:self.legacyDatabaseFilePath_WAL];
 
-- (void)protectFolderAtPath:(NSString *)path {
-    if (![NSFileManager.defaultManager fileExistsAtPath:path]) {
-        return;
-    }
-
-    NSError *error;
-    NSDictionary *fileProtection = @{NSFileProtectionKey : NSFileProtectionCompleteUntilFirstUserAuthentication};
-    [[NSFileManager defaultManager] setAttributes:fileProtection ofItemAtPath:path error:&error];
-
-    NSDictionary *resourcesAttrs = @{ NSURLIsExcludedFromBackupKey : @YES };
-
-    NSURL *ressourceURL = [NSURL fileURLWithPath:path];
-    BOOL success        = [ressourceURL setResourceValues:resourcesAttrs error:&error];
-
-    if (error || !success) {
-        OWSProdCritical([OWSAnalyticsEvents storageErrorFileProtection]);
-    }
+    // Protect the entire new database directory.
+    [OWSFileSystem protectFolderAtPath:self.sharedDataDatabaseDirPath];
 }
 
 - (nullable YapDatabaseConnection *)newDatabaseConnection
@@ -382,33 +379,85 @@ void setDatabaseInitialized()
     return FALSE;
 }
 
-- (BOOL)dbExists {
-    return [[NSFileManager defaultManager] fileExistsAtPath:[self dbPath]];
++ (NSString *)legacyDatabaseDirPath
+{
+    return [OWSFileSystem appDocumentDirectoryPath];
 }
 
-- (NSString *)dbPath {
-    NSString *databasePath;
++ (NSString *)sharedDataDatabaseDirPath
+{
+    NSString *databaseDirPath = [[OWSFileSystem appSharedDataDirectoryPath] stringByAppendingPathComponent:@"database"];
 
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-#if TARGET_OS_IPHONE
-    NSURL *fileURL = [[fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
-    NSString *path = [fileURL path];
-    databasePath = [path stringByAppendingPathComponent:databaseName];
-#elif TARGET_OS_MAC
-
-    NSString *bundleID = [[NSBundle mainBundle] bundleIdentifier];
-    NSArray *urlPaths  = [fileManager URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask];
-
-    NSURL *appDirectory = [[urlPaths objectAtIndex:0] URLByAppendingPathComponent:bundleID isDirectory:YES];
-
-    if (![fileManager fileExistsAtPath:[appDirectory path]]) {
-        [fileManager createDirectoryAtURL:appDirectory withIntermediateDirectories:NO attributes:nil error:nil];
+    if (![OWSFileSystem ensureDirectoryExists:databaseDirPath]) {
+        [NSException raise:TSStorageManagerExceptionName_CouldNotCreateDatabaseDirectory
+                    format:@"Could not create new database directory"];
     }
+    return databaseDirPath;
+}
 
-    databasePath = [appDirectory.filePathURL.absoluteString stringByAppendingPathComponent:databaseName];
-#endif
++ (NSString *)databaseFilename
+{
+    return @"Signal.sqlite";
+}
 
-    return databasePath;
++ (NSString *)databaseFilename_SHM
+{
+    return [self.databaseFilename stringByAppendingString:@"-shm"];
+}
+
++ (NSString *)databaseFilename_WAL
+{
+    return [self.databaseFilename stringByAppendingString:@"-wal"];
+}
+
++ (NSString *)legacyDatabaseFilePath
+{
+    return [self.legacyDatabaseDirPath stringByAppendingPathComponent:self.databaseFilename];
+}
+
++ (NSString *)legacyDatabaseFilePath_SHM
+{
+    return [self.legacyDatabaseDirPath stringByAppendingPathComponent:self.databaseFilename_SHM];
+}
+
++ (NSString *)legacyDatabaseFilePath_WAL
+{
+    return [self.legacyDatabaseDirPath stringByAppendingPathComponent:self.databaseFilename_WAL];
+}
+
++ (NSString *)sharedDataDatabaseFilePath
+{
+    return [self.sharedDataDatabaseDirPath stringByAppendingPathComponent:self.databaseFilename];
+}
+
++ (NSString *)sharedDataDatabaseFilePath_SHM
+{
+    return [self.sharedDataDatabaseDirPath stringByAppendingPathComponent:self.databaseFilename_SHM];
+}
+
++ (NSString *)sharedDataDatabaseFilePath_WAL
+{
+    return [self.sharedDataDatabaseDirPath stringByAppendingPathComponent:self.databaseFilename_WAL];
+}
+
++ (void)migrateToSharedData
+{
+    [OWSFileSystem moveAppFilePath:self.legacyDatabaseFilePath
+                sharedDataFilePath:self.sharedDataDatabaseFilePath
+                     exceptionName:TSStorageManagerExceptionName_CouldNotMoveDatabaseFile];
+    [OWSFileSystem moveAppFilePath:self.legacyDatabaseFilePath_SHM
+                sharedDataFilePath:self.sharedDataDatabaseFilePath_SHM
+                     exceptionName:TSStorageManagerExceptionName_CouldNotMoveDatabaseFile];
+    [OWSFileSystem moveAppFilePath:self.legacyDatabaseFilePath_WAL
+                sharedDataFilePath:self.sharedDataDatabaseFilePath_WAL
+                     exceptionName:TSStorageManagerExceptionName_CouldNotMoveDatabaseFile];
+}
+
+- (NSString *)dbPath
+{
+    DDLogVerbose(@"databasePath: %@", TSStorageManager.sharedDataDatabaseFilePath);
+
+    return TSStorageManager.sharedDataDatabaseFilePath;
 }
 
 + (BOOL)isDatabasePasswordAccessible
@@ -430,7 +479,8 @@ void setDatabaseInitialized()
 
 - (void)backgroundedAppDatabasePasswordInaccessibleWithErrorDescription:(NSString *)errorDescription
 {
-    OWSAssert([UIApplication sharedApplication].applicationState == UIApplicationStateBackground);
+    OWSAssert(
+        CurrentAppContext().isMainApp && CurrentAppContext().mainApplicationState == UIApplicationStateBackground);
 
     // Sleep to give analytics events time to be delivered.
     [NSThread sleepForTimeInterval:5.0f];
@@ -438,7 +488,7 @@ void setDatabaseInitialized()
     // Presumably this happened in response to a push notification. It's possible that the keychain is corrupted
     // but it could also just be that the user hasn't yet unlocked their device since our password is
     // kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-    [NSException raise:TSStorageManagerExceptionNameDatabasePasswordInaccessibleWhileBackgrounded
+    [NSException raise:TSStorageManagerExceptionName_DatabasePasswordInaccessibleWhileBackgrounded
                 format:@"%@", errorDescription];
 }
 
@@ -451,16 +501,28 @@ void setDatabaseInitialized()
         [SAMKeychain passwordForService:keychainService account:keychainDBPassAccount error:&keyFetchError];
 
     if (keyFetchError) {
-        UIApplicationState applicationState = [UIApplication sharedApplication].applicationState;
-        NSString *errorDescription = [NSString stringWithFormat:@"Database password inaccessible. No unlock since device restart? Error: %@ ApplicationState: %d", keyFetchError, (int)applicationState];
-        DDLogError(@"%@ %@", self.tag, errorDescription);
+        NSString *errorDescription =
+            [NSString stringWithFormat:@"Database password inaccessible. No unlock since device restart? Error: %@",
+                      keyFetchError];
+        if (CurrentAppContext().isMainApp) {
+            UIApplicationState applicationState = CurrentAppContext().mainApplicationState;
+            errorDescription =
+                [errorDescription stringByAppendingFormat:@", ApplicationState: %d", (int)applicationState];
+        }
+        DDLogError(@"%@ %@", self.logTag, errorDescription);
         [DDLog flushLog];
 
-        if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
-            // TODO: Rather than crash here, we should detect the situation earlier
-            // and exit gracefully - (in the app delegate?). See the `
-            // This is a last ditch effort to avoid blowing away the user's database.
-            [self backgroundedAppDatabasePasswordInaccessibleWithErrorDescription:errorDescription];
+        if (CurrentAppContext().isMainApp) {
+            UIApplicationState applicationState = CurrentAppContext().mainApplicationState;
+            if (applicationState == UIApplicationStateBackground) {
+                // TODO: Rather than crash here, we should detect the situation earlier
+                // and exit gracefully - (in the app delegate?). See the `
+                // This is a last ditch effort to avoid blowing away the user's database.
+                [self backgroundedAppDatabasePasswordInaccessibleWithErrorDescription:errorDescription];
+            }
+        } else {
+            [self backgroundedAppDatabasePasswordInaccessibleWithErrorDescription:
+                      @"Password inaccessible; not main app."];
         }
 
         // At this point, either this is a new install so there's no existing password to retrieve
@@ -495,7 +557,7 @@ void setDatabaseInitialized()
         // Sleep to give analytics events time to be delivered.
         [NSThread sleepForTimeInterval:15.0f];
 
-        [NSException raise:TSStorageManagerExceptionNameDatabasePasswordUnwritable
+        [NSException raise:TSStorageManagerExceptionName_DatabasePasswordUnwritable
                     format:@"Setting DB password failed with error: %@", keySetError];
     } else {
         DDLogWarn(@"Succesfully set new DB password.");
@@ -654,18 +716,6 @@ void setDatabaseInitialized()
     [self deleteDatabaseFile];
 
     [TSAttachmentStream deleteAttachments];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

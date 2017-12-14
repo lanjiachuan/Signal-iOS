@@ -15,12 +15,11 @@ NS_ASSUME_NONNULL_BEGIN
 @interface TSMessage : TSInteraction
 
 @property (nonatomic, readonly) NSMutableArray<NSString *> *attachmentIds;
-@property (nullable, nonatomic) NSString *body;
-@property (nonatomic) uint32_t expiresInSeconds;
-@property (nonatomic) uint64_t expireStartedAt;
+@property (nonatomic, readonly, nullable) NSString *body;
+@property (nonatomic, readonly) uint32_t expiresInSeconds;
+@property (nonatomic, readonly) uint64_t expireStartedAt;
 @property (nonatomic, readonly) uint64_t expiresAt;
 @property (nonatomic, readonly) BOOL isExpiringMessage;
-@property (nonatomic, readonly) BOOL shouldStartExpireTimer;
 
 - (instancetype)initWithTimestamp:(uint64_t)timestamp;
 
@@ -51,6 +50,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable instancetype)initWithCoder:(NSCoder *)coder NS_DESIGNATED_INITIALIZER;
 
 - (BOOL)hasAttachments;
+
+- (NSString *)previewTextWithTransaction:(YapDatabaseReadTransaction *)transaction;
+
+- (BOOL)shouldStartExpireTimer;
+- (BOOL)shouldStartExpireTimer:(YapDatabaseReadTransaction *)transaction;
+
+#pragma mark - Update With... Methods
+
+- (void)updateWithExpireStartedAt:(uint64_t)expireStartedAt transaction:(YapDatabaseReadWriteTransaction *)transaction;
 
 @end
 

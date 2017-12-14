@@ -3,6 +3,8 @@
 //
 
 import Foundation
+import SignalServiceKit
+import SignalMessaging
 
 /**
  * Creates an outbound call via WebRTC.
@@ -18,6 +20,8 @@ import Foundation
         self.contactsUpdater = contactsUpdater
 
         super.init()
+
+        SwiftSingletons.register(self)
     }
 
     /**
@@ -40,8 +44,12 @@ import Foundation
     public func initiateCall(recipientId: String) -> Bool {
         // Rather than an init-assigned dependency property, we access `callUIAdapter` via Environment
         // because it can change after app launch due to user settings
-        guard let callUIAdapter = Environment.getCurrent().callUIAdapter else {
+        guard let callUIAdapter = SignalApp.shared().callUIAdapter else {
             owsFail("\(TAG) can't initiate call because callUIAdapter is nil")
+            return false
+        }
+        guard let frontmostViewController = UIApplication.shared.frontmostViewController else {
+            owsFail("\(TAG) could not identify frontmostViewController in \(#function)")
             return false
         }
 
@@ -59,17 +67,22 @@ import Foundation
         // Check for microphone permissions
         // Alternative way without prompting for permissions:
         // if AVAudioSession.sharedInstance().recordPermission() == .denied {
-        AVAudioSession.sharedInstance().requestRecordPermission { isGranted in
-            DispatchQueue.main.async {
-                // Here the permissions are either granted or denied
-                guard isGranted == true else {
-                    Logger.warn("\(self.TAG) aborting due to missing microphone permissions.")
-                    OWSAlerts.showNoMicrophonePermissionAlert()
-                    return
-                }
-                callUIAdapter.startAndShowOutgoingCall(recipientId: recipientId)
+        frontmostViewController.ows_ask(forMicrophonePermissions: { [weak self] granted in
+            // Success callback; camera permissions are granted.
+
+            guard let strongSelf = self else {
+                return
             }
-        }
+
+            // Here the permissions are either granted or denied
+            guard granted == true else {
+                Logger.warn("\(strongSelf.TAG) aborting due to missing microphone permissions.")
+                OWSAlerts.showNoMicrophonePermissionAlert()
+                return
+            }
+            callUIAdapter.startAndShowOutgoingCall(recipientId: recipientId)
+        })
+
         return true
     }
 }

@@ -3,11 +3,13 @@
 //
 
 import Foundation
+import SignalServiceKit
+import SignalMessaging
 
 /**
  * Manage call related UI in a pre-CallKit world.
  */
-class NonCallKitCallUIAdaptee: CallUIAdaptee {
+class NonCallKitCallUIAdaptee: NSObject, CallUIAdaptee {
 
     let TAG = "[NonCallKitCallUIAdaptee]"
 
@@ -18,8 +20,14 @@ class NonCallKitCallUIAdaptee: CallUIAdaptee {
     let hasManualRinger = true
 
     required init(callService: CallService, notificationsAdapter: CallNotificationsAdapter) {
+        AssertIsOnMainThread()
+
         self.callService = callService
         self.notificationsAdapter = notificationsAdapter
+
+        super.init()
+
+        SwiftSingletons.register(self)
     }
 
     func startOutgoingCall(handle: String) -> SignalCall {
@@ -81,7 +89,7 @@ class NonCallKitCallUIAdaptee: CallUIAdaptee {
             return
         }
 
-        PeerConnectionClient.startAudioSession()
+        CallAudioSession.shared.isRTCAudioEnabled = true
         self.callService.handleAnswerCall(call)
     }
 
@@ -115,7 +123,7 @@ class NonCallKitCallUIAdaptee: CallUIAdaptee {
     func recipientAcceptedCall(_ call: SignalCall) {
         AssertIsOnMainThread()
 
-        PeerConnectionClient.startAudioSession()
+        CallAudioSession.shared.isRTCAudioEnabled = true
     }
 
     func localHangupCall(_ call: SignalCall) {
@@ -157,7 +165,7 @@ class NonCallKitCallUIAdaptee: CallUIAdaptee {
             return
         }
 
-        self.callService.setIsMuted(isMuted: isMuted)
+        self.callService.setIsMuted(call: call, isMuted: isMuted)
     }
 
     func setHasLocalVideo(call: SignalCall, hasLocalVideo: Bool) {

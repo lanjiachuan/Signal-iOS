@@ -6,6 +6,8 @@ import Foundation
 import UIKit
 import CallKit
 import AVFoundation
+import SignalServiceKit
+import SignalMessaging
 
 /**
  * Connects user interface to the CallService using CallKit.
@@ -21,6 +23,7 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
     private let callManager: CallKitCallManager
     internal let callService: CallService
     internal let notificationsAdapter: CallNotificationsAdapter
+    internal let contactsManager: OWSContactsManager
     private let provider: CXProvider
 
     // CallKit handles incoming ringer stop/start for us. Yay!
@@ -39,26 +42,28 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
 
         providerConfiguration.supportedHandleTypes = [.phoneNumber, .generic]
 
-        if let iconMaskImage = UIImage(named: "IconMask") {
-            providerConfiguration.iconTemplateImageData = UIImagePNGRepresentation(iconMaskImage)
-        }
+        let iconMaskImage = #imageLiteral(resourceName: "logoSignal")
+        providerConfiguration.iconTemplateImageData = UIImagePNGRepresentation(iconMaskImage)
 
         providerConfiguration.ringtoneSound = "r.caf"
 
         return providerConfiguration
     }
 
-    init(callService: CallService, notificationsAdapter: CallNotificationsAdapter) {
+    init(callService: CallService, contactsManager: OWSContactsManager, notificationsAdapter: CallNotificationsAdapter) {
         AssertIsOnMainThread()
 
         Logger.debug("\(self.TAG) \(#function)")
 
         self.callManager = CallKitCallManager()
         self.callService = callService
+        self.contactsManager = contactsManager
         self.notificationsAdapter = notificationsAdapter
         self.provider = CXProvider(configuration: type(of: self).providerConfiguration)
 
         super.init()
+
+        SwiftSingletons.register(self)
 
         self.provider.setDelegate(self, queue: nil)
     }
@@ -100,17 +105,18 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
 
         // Construct a CXCallUpdate describing the incoming call, including the caller.
         let update = CXCallUpdate()
-        if Environment.getCurrent().preferences.isCallKitPrivacyEnabled() {
+        if Environment.current().preferences.isCallKitPrivacyEnabled() {
             let callKitId = CallKitCallManager.kAnonymousCallHandlePrefix + call.localId.uuidString
             update.remoteHandle = CXHandle(type: .generic, value: callKitId)
             TSStorageManager.shared().setPhoneNumber(call.remotePhoneNumber, forCallKitId:callKitId)
+            update.localizedCallerName = NSLocalizedString("CALLKIT_ANONYMOUS_CONTACT_NAME", comment: "The generic name used for calls if CallKit privacy is enabled")
         } else {
+            update.localizedCallerName = self.contactsManager.stringForConversationTitle(withPhoneIdentifier: call.remotePhoneNumber)
             update.remoteHandle = CXHandle(type: .phoneNumber, value: call.remotePhoneNumber)
         }
 
         update.hasVideo = call.hasLocalVideo
-        // Update the name used in the CallKit UI for incoming calls.
-        update.localizedCallerName = NSLocalizedString("CALLKIT_ANONYMOUS_CONTACT_NAME", comment: "The generic name used for calls if CallKit privacy is enabled")
+
         disableUnsupportedFeatures(callUpdate: update)
 
         // Report the incoming call to the system
@@ -214,9 +220,6 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
         AssertIsOnMainThread()
         Logger.info("\(self.TAG) \(#function)")
 
-        // Stop any in-progress WebRTC related audio.
-        PeerConnectionClient.stopAudioSession()
-
         // End any ongoing calls if the provider resets, and remove them from the app's list of calls,
         // since they are no longer valid.
         callService.handleFailedCurrentCall(error: .providerReset)
@@ -244,7 +247,7 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
         action.fulfill()
         self.provider.reportOutgoingCall(with: call.localId, startedConnectingAt: nil)
 
-        if Environment.getCurrent().preferences.isCallKitPrivacyEnabled() {
+        if Environment.current().preferences.isCallKitPrivacyEnabled() {
             // Update the name used in the CallKit UI for outgoing calls.
             let update = CXCallUpdate()
             update.localizedCallerName = NSLocalizedString("CALLKIT_ANONYMOUS_CONTACT_NAME",
@@ -297,17 +300,7 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
         }
 
         // Update the SignalCall's underlying hold state.
-        call.isOnHold = action.isOnHold
-
-        // Stop or start audio in response to holding or unholding the call.
-        if call.isOnHold {
-            // stopAudio() <-- SpeakerBox
-            PeerConnectionClient.stopAudioSession()
-        } else {
-            // startAudio() <-- SpeakerBox
-            // This is redundant with what happens in `provider(_:didActivate:)`
-            //PeerConnectionClient.startAudioSession()
-        }
+        self.callService.setIsOnHold(call: call, isOnHold: action.isOnHold)
 
         // Signal to the system that the action has been successfully performed.
         action.fulfill()
@@ -317,13 +310,13 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
         AssertIsOnMainThread()
 
         Logger.info("\(TAG) Received \(#function) CXSetMutedCallAction")
-        guard callManager.callWithLocalId(action.callUUID) != nil else {
+        guard let call = callManager.callWithLocalId(action.callUUID) else {
             Logger.error("\(TAG) Failing CXSetMutedCallAction for unknown call: \(action.callUUID)")
             action.fail()
             return
         }
 
-        self.callService.setIsMuted(isMuted: action.isMuted)
+        self.callService.setIsMuted(call: call, isMuted: action.isMuted)
         action.fulfill()
     }
 
@@ -352,19 +345,14 @@ final class CallKitCallUIAdaptee: NSObject, CallUIAdaptee, CXProviderDelegate {
 
         Logger.debug("\(TAG) Received \(#function)")
 
-        // Start recording
-        PeerConnectionClient.startAudioSession()
+        CallAudioSession.shared.isRTCAudioEnabled = true
     }
 
     func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
         AssertIsOnMainThread()
 
         Logger.debug("\(TAG) Received \(#function)")
-
-        /*
-         Restart any non-call related audio now that the app's audio session has been
-         de-activated after having its priority restored to normal.
-         */
+        CallAudioSession.shared.isRTCAudioEnabled = false
     }
 
     // MARK: - Util

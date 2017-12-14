@@ -3,7 +3,7 @@
 //
 
 #import "OWSDisappearingMessagesFinder.h"
-#import "NSDate+millisecondTimeStamp.h"
+#import "NSDate+OWS.h"
 #import "TSMessage.h"
 #import "TSOutgoingMessage.h"
 #import "TSStorageManager.h"
@@ -99,7 +99,7 @@ static NSString *const OWSDisappearingMessageFinderExpiresAtIndex = @"index_mess
         if ([message isKindOfClass:[TSMessage class]]) {
             block(message);
         } else {
-            DDLogError(@"%@ unexpected object: %@", self.tag, message);
+            DDLogError(@"%@ unexpected object: %@", self.logTag, message);
         }
     }
 }
@@ -136,7 +136,7 @@ static NSString *const OWSDisappearingMessageFinderExpiresAtIndex = @"index_mess
         if ([message isKindOfClass:[TSMessage class]]) {
             block(message);
         } else {
-            DDLogError(@"%@ unexpected object: %@", self.tag, message);
+            DDLogError(@"%@ unexpected object: %@", self.logTag, message);
         }
     }
 }
@@ -177,7 +177,7 @@ static NSString *const OWSDisappearingMessageFinderExpiresAtIndex = @"index_mess
             }
             TSMessage *message = (TSMessage *)object;
 
-            if (!message.shouldStartExpireTimer) {
+            if (![message shouldStartExpireTimer:transaction]) {
                 return;
             }
 
@@ -201,23 +201,11 @@ static NSString *const OWSDisappearingMessageFinderExpiresAtIndex = @"index_mess
                                            withName:OWSDisappearingMessageFinderExpiresAtIndex
                                     completionBlock:^(BOOL ready) {
                                         if (ready) {
-                                            DDLogDebug(@"%@ completed registering extension async.", self.tag);
+                                            DDLogDebug(@"%@ completed registering extension async.", self.logTag);
                                         } else {
-                                            DDLogError(@"%@ failed registering extension async.", self.tag);
+                                            DDLogError(@"%@ failed registering extension async.", self.logTag);
                                         }
                                     }];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

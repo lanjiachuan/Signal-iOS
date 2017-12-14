@@ -103,12 +103,17 @@ OWSSignalServiceProtosVerifiedState OWSVerificationStateToProtoState(OWSVerifica
     }];
 }
 
++ (YapDatabaseConnection *)dbReadConnection
+{
+    return self.dbReadWriteConnection;
+}
+
 /**
  * Override to disable the object cache to better enforce transaction semantics on the store.
  * Note that it's still technically possible to access this collection from a different collection,
  * but that should be considered a bug.
  */
-+ (YapDatabaseConnection *)dbConnection
++ (YapDatabaseConnection *)dbReadWriteConnection
 {
     static dispatch_once_t onceToken;
     static YapDatabaseConnection *sharedDBConnection;
@@ -123,34 +128,51 @@ OWSSignalServiceProtosVerifiedState OWSVerificationStateToProtoState(OWSVerifica
     return sharedDBConnection;
 }
 
+- (void)saveWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    OWSAssert(transaction.connection == [OWSRecipientIdentity dbReadWriteConnection]);
+
+    [super saveWithTransaction:transaction];
+}
+
+- (void)removeWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    OWSAssert(transaction.connection == [OWSRecipientIdentity dbReadWriteConnection]);
+
+    [super removeWithTransaction:transaction];
+}
+
+- (void)touchWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    OWSAssert(transaction.connection == [OWSRecipientIdentity dbReadWriteConnection]);
+
+    [super touchWithTransaction:transaction];
+}
+
++ (nullable instancetype)fetchObjectWithUniqueID:(NSString *)uniqueID
+                                     transaction:(YapDatabaseReadTransaction *)transaction
+{
+    OWSAssert(transaction.connection == [OWSRecipientIdentity dbReadConnection]);
+
+    return [super fetchObjectWithUniqueID:uniqueID transaction:transaction];
+}
+
 #pragma mark - debug
 
 + (void)printAllIdentities
 {
-    DDLogInfo(@"%@ ### All Recipient Identities ###", self.tag);
+    DDLogInfo(@"%@ ### All Recipient Identities ###", self.logTag);
     __block int count = 0;
     [self enumerateCollectionObjectsUsingBlock:^(id obj, BOOL *stop) {
         count++;
         if (![obj isKindOfClass:[self class]]) {
-            OWSFail(@"%@ unexpected object in collection: %@", self.tag, obj);
+            OWSFail(@"%@ unexpected object in collection: %@", self.logTag, obj);
             return;
         }
         OWSRecipientIdentity *recipientIdentity = (OWSRecipientIdentity *)obj;
 
-        DDLogInfo(@"%@ Identity %d: %@", self.tag, count, recipientIdentity.debugDescription);
+        DDLogInfo(@"%@ Identity %d: %@", self.logTag, count, recipientIdentity.debugDescription);
     }];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

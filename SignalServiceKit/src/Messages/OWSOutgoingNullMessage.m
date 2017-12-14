@@ -4,10 +4,10 @@
 
 #import "OWSOutgoingNullMessage.h"
 #import "Cryptography.h"
-#import "NSDate+millisecondTimeStamp.h"
-#import "TSContactThread.h"
+#import "NSDate+OWS.h"
 #import "OWSSignalServiceProtos.pb.h"
 #import "OWSVerificationStateSyncMessage.h"
+#import "TSContactThread.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -65,10 +65,9 @@ NS_ASSUME_NONNULL_BEGIN
     return NO;
 }
 
-- (void)saveWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
+- (BOOL)shouldBeSaved
 {
-    // No-op as we don't want to actually display this as an outgoing message in our thread.
-    return;
+    return NO;
 }
 
 @end

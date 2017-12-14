@@ -3,6 +3,7 @@
 //
 
 #import "OWSBlockingManager.h"
+#import "NSNotificationCenter+OWS.h"
 #import "OWSBlockedPhoneNumbersMessage.h"
 #import "OWSMessageSender.h"
 #import "TSStorageManager.h"
@@ -92,7 +93,7 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
 {
     OWSAssert(phoneNumber.length > 0);
 
-    DDLogInfo(@"%@ addBlockedPhoneNumber: %@", self.tag, phoneNumber);
+    DDLogInfo(@"%@ addBlockedPhoneNumber: %@", self.logTag, phoneNumber);
 
     @synchronized(self)
     {
@@ -113,7 +114,7 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
 {
     OWSAssert(phoneNumber.length > 0);
 
-    DDLogInfo(@"%@ removeBlockedPhoneNumber: %@", self.tag, phoneNumber);
+    DDLogInfo(@"%@ removeBlockedPhoneNumber: %@", self.logTag, phoneNumber);
 
     @synchronized(self)
     {
@@ -134,7 +135,7 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
 {
     OWSAssert(blockedPhoneNumbers != nil);
 
-    DDLogInfo(@"%@ setBlockedPhoneNumbers: %d", self.tag, (int)blockedPhoneNumbers.count);
+    DDLogInfo(@"%@ setBlockedPhoneNumbers: %d", self.logTag, (int)blockedPhoneNumbers.count);
 
     @synchronized(self)
     {
@@ -161,6 +162,11 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
     }
 }
 
+- (BOOL)isRecipientIdBlocked:(NSString *)recipientId
+{
+    return [self.blockedPhoneNumbers containsObject:recipientId];
+}
+
 // This should be called every time the block list changes.
 
 - (void)handleUpdate
@@ -177,7 +183,7 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
                           forKey:kOWSBlockingManager_BlockedPhoneNumbersKey
                     inCollection:kOWSBlockingManager_BlockedPhoneNumbersCollection];
 
-    dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         if (sendSyncMessage) {
             [self sendBlockedPhoneNumbersMessage:blockedPhoneNumbers];
         } else {
@@ -196,9 +202,9 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
             [self saveSyncedBlockedPhoneNumbers:blockedPhoneNumbers];
         }
 
-        [[NSNotificationCenter defaultCenter] postNotificationName:kNSNotificationName_BlockedPhoneNumbersDidChange
-                                                            object:nil
-                                                          userInfo:nil];
+        [[NSNotificationCenter defaultCenter] postNotificationNameAsync:kNSNotificationName_BlockedPhoneNumbersDidChange
+                                                                 object:nil
+                                                               userInfo:nil];
     });
 }
 
@@ -219,6 +225,15 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
     [self observeNotifications];
 }
 
+- (void)syncBlockedPhoneNumbers
+{
+    OWSAssert(_blockedPhoneNumberSet);
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [self sendBlockedPhoneNumbersMessage:self.blockedPhoneNumbers];
+    });
+}
+
 // This method should only be called from within a synchronized block.
 - (void)syncBlockedPhoneNumbersIfNecessary
 {
@@ -231,10 +246,8 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
                            inCollection:kOWSBlockingManager_BlockedPhoneNumbersCollection];
     NSSet *syncedBlockedPhoneNumberSet = [[NSSet alloc] initWithArray:(syncedBlockedPhoneNumbers ?: [NSArray new])];
     if (![_blockedPhoneNumberSet isEqualToSet:syncedBlockedPhoneNumberSet]) {
-        DDLogInfo(@"%@ retrying sync of blocked phone numbers", self.tag);
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self sendBlockedPhoneNumbersMessage:self.blockedPhoneNumbers];
-        });
+        DDLogInfo(@"%@ retrying sync of blocked phone numbers", self.logTag);
+        [self sendBlockedPhoneNumbersMessage:self.blockedPhoneNumbers];
     }
 }
 
@@ -245,15 +258,15 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
     OWSBlockedPhoneNumbersMessage *message =
         [[OWSBlockedPhoneNumbersMessage alloc] initWithPhoneNumbers:blockedPhoneNumbers];
 
-    [self.messageSender sendMessage:message
+    [self.messageSender enqueueMessage:message
         success:^{
-            DDLogInfo(@"%@ Successfully sent blocked phone numbers sync message", self.tag);
+            DDLogInfo(@"%@ Successfully sent blocked phone numbers sync message", self.logTag);
 
             // Record the last set of "blocked phone numbers" which we successfully synced.
             [self saveSyncedBlockedPhoneNumbers:blockedPhoneNumbers];
         }
         failure:^(NSError *error) {
-            DDLogError(@"%@ Failed to send blocked phone numbers sync message with error: %@", self.tag, error);
+            DDLogError(@"%@ Failed to send blocked phone numbers sync message with error: %@", self.logTag, error);
         }];
 }
 
@@ -277,18 +290,6 @@ NSString *const kOWSBlockingManager_SyncedBlockedPhoneNumbersKey = @"kOWSBlockin
     {
         [self syncBlockedPhoneNumbersIfNecessary];
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

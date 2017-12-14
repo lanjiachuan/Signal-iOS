@@ -7,7 +7,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-NSUInteger const TSAttachmentSchemaVersion = 3;
+NSUInteger const TSAttachmentSchemaVersion = 4;
 
 @interface TSAttachment ()
 
@@ -21,9 +21,23 @@ NSUInteger const TSAttachmentSchemaVersion = 3;
 // i.e. undownloaded incoming attachments.
 - (instancetype)initWithServerId:(UInt64)serverId
                    encryptionKey:(NSData *)encryptionKey
+                       byteCount:(UInt32)byteCount
                      contentType:(NSString *)contentType
                   sourceFilename:(nullable NSString *)sourceFilename
 {
+    OWSAssert(serverId > 0);
+    OWSAssert(encryptionKey.length > 0);
+    if (byteCount <= 0) {
+        // This will fail with legacy iOS clients which don't upload attachment size.
+        DDLogWarn(@"%@ Missing byteCount for attachment with serverId: %lld", self.logTag, serverId);
+    }
+    if (contentType.length < 1) {
+        DDLogWarn(@"%@ incoming attachment has invalid content type", self.logTag);
+
+        contentType = OWSMimeTypeApplicationOctetStream;
+    }
+    OWSAssert(contentType.length > 0);
+
     self = [super init];
     if (!self) {
         return self;
@@ -31,25 +45,40 @@ NSUInteger const TSAttachmentSchemaVersion = 3;
 
     _serverId = serverId;
     _encryptionKey = encryptionKey;
+    _byteCount = byteCount;
     _contentType = contentType;
-    _attachmentSchemaVersion = TSAttachmentSchemaVersion;
     _sourceFilename = sourceFilename;
+
+    _attachmentSchemaVersion = TSAttachmentSchemaVersion;
 
     return self;
 }
 
 // This constructor is used for new instances of TSAttachmentStream
 // that represent new, un-uploaded outgoing attachments.
-- (instancetype)initWithContentType:(NSString *)contentType sourceFilename:(nullable NSString *)sourceFilename
+- (instancetype)initWithContentType:(NSString *)contentType
+                          byteCount:(UInt32)byteCount
+                     sourceFilename:(nullable NSString *)sourceFilename
 {
+    if (contentType.length < 1) {
+        DDLogWarn(@"%@ outgoing attachment has invalid content type", self.logTag);
+
+        contentType = OWSMimeTypeApplicationOctetStream;
+    }
+    OWSAssert(contentType.length > 0);
+    OWSAssert(byteCount > 0);
+
     self = [super init];
     if (!self) {
         return self;
     }
+    DDLogVerbose(@"%@ init attachment with uniqueId: %@", self.logTag, self.uniqueId);
 
     _contentType = contentType;
-    _attachmentSchemaVersion = TSAttachmentSchemaVersion;
+    _byteCount = byteCount;
     _sourceFilename = sourceFilename;
+
+    _attachmentSchemaVersion = TSAttachmentSchemaVersion;
 
     return self;
 }
@@ -58,6 +87,14 @@ NSUInteger const TSAttachmentSchemaVersion = 3;
 // that represent downloaded incoming attachments.
 - (instancetype)initWithPointer:(TSAttachment *)pointer
 {
+    OWSAssert(pointer.serverId > 0);
+    OWSAssert(pointer.encryptionKey.length > 0);
+    if (pointer.byteCount <= 0) {
+        // This will fail with legacy iOS clients which don't upload attachment size.
+        DDLogWarn(@"%@ Missing pointer.byteCount for attachment with serverId: %lld", self.logTag, pointer.serverId);
+    }
+    OWSAssert(pointer.contentType.length > 0);
+
     // Once saved, this AttachmentStream will replace the AttachmentPointer in the attachments collection.
     self = [super initWithUniqueId:pointer.uniqueId];
     if (!self) {
@@ -66,8 +103,16 @@ NSUInteger const TSAttachmentSchemaVersion = 3;
 
     _serverId = pointer.serverId;
     _encryptionKey = pointer.encryptionKey;
-    _contentType = pointer.contentType;
+    _byteCount = pointer.byteCount;
     _sourceFilename = pointer.sourceFilename;
+    NSString *contentType = pointer.contentType;
+    if (contentType.length < 1) {
+        DDLogWarn(@"%@ incoming attachment has invalid content type", self.logTag);
+
+        contentType = OWSMimeTypeApplicationOctetStream;
+    }
+    _contentType = contentType;
+
     _attachmentSchemaVersion = TSAttachmentSchemaVersion;
 
     return self;
@@ -89,6 +134,12 @@ NSUInteger const TSAttachmentSchemaVersion = 3;
         // renamed _filename to _sourceFilename
         _sourceFilename = [coder decodeObjectForKey:@"filename"];
         OWSAssert(!_sourceFilename || [_sourceFilename isKindOfClass:[NSString class]]);
+    }
+
+    if (_contentType.length < 1) {
+        DDLogWarn(@"%@ legacy attachment has invalid content type", self.logTag);
+
+        _contentType = OWSMimeTypeApplicationOctetStream;
     }
 
     return self;
@@ -132,18 +183,6 @@ NSUInteger const TSAttachmentSchemaVersion = 3;
 - (BOOL)isVoiceMessage
 {
     return self.attachmentType == TSAttachmentTypeVoiceMessage;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

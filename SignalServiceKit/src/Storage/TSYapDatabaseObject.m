@@ -6,6 +6,8 @@
 #import "TSStorageManager.h"
 #import <YapDatabase/YapDatabaseTransaction.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @implementation TSYapDatabaseObject
 
 - (instancetype)init
@@ -13,7 +15,7 @@
     return [self initWithUniqueId:[[NSUUID UUID] UUIDString]];
 }
 
-- (instancetype)initWithUniqueId:(NSString *)aUniqueId
+- (instancetype)initWithUniqueId:(NSString *_Nullable)aUniqueId
 {
     self = [super init];
     if (!self) {
@@ -21,6 +23,16 @@
     }
 
     _uniqueId = aUniqueId;
+
+    return self;
+}
+
+- (nullable instancetype)initWithCoder:(NSCoder *)coder
+{
+    self = [super initWithCoder:coder];
+    if (!self) {
+        return self;
+    }
 
     return self;
 }
@@ -35,6 +47,14 @@
     [[self dbReadWriteConnection] readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         [self saveWithTransaction:transaction];
     }];
+}
+
+- (void)saveAsyncWithCompletionBlock:(void (^_Nullable)(void))completionBlock
+{
+    [[self dbReadWriteConnection] asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
+        [self saveWithTransaction:transaction];
+    }
+                                          completionBlock:completionBlock];
 }
 
 - (void)touchWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
@@ -168,18 +188,38 @@
     }];
 }
 
-+ (instancetype)fetchObjectWithUniqueID:(NSString *)uniqueID transaction:(YapDatabaseReadTransaction *)transaction
++ (nullable instancetype)fetchObjectWithUniqueID:(NSString *)uniqueID
+                                     transaction:(YapDatabaseReadTransaction *)transaction
 {
     return [transaction objectForKey:uniqueID inCollection:[self collection]];
 }
 
-+ (instancetype)fetchObjectWithUniqueID:(NSString *)uniqueID
++ (nullable instancetype)fetchObjectWithUniqueID:(NSString *)uniqueID
 {
-    __block id object;
+    __block id _Nullable object = nil;
     [[self dbReadConnection] readWithBlock:^(YapDatabaseReadTransaction *transaction) {
         object = [transaction objectForKey:uniqueID inCollection:[self collection]];
     }];
     return object;
 }
 
+#pragma mark Update With...
+
+- (void)applyChangeToSelfAndLatestCopy:(YapDatabaseReadWriteTransaction *)transaction
+                           changeBlock:(void (^)(id))changeBlock
+{
+    OWSAssert(transaction);
+
+    changeBlock(self);
+
+    NSString *collection = [[self class] collection];
+    id latestInstance = [transaction objectForKey:self.uniqueId inCollection:collection];
+    if (latestInstance) {
+        changeBlock(latestInstance);
+        [latestInstance saveWithTransaction:transaction];
+    }
+}
+
 @end
+
+NS_ASSUME_NONNULL_END

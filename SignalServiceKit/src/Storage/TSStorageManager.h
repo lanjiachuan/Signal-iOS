@@ -4,7 +4,6 @@
 
 #import "TSStorageKeys.h"
 #import "YapDatabaseConnection+OWS.h"
-#import <Foundation/Foundation.h>
 #import <YapDatabase/YapDatabase.h>
 
 @class ECKeyPair;
@@ -35,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Specifically, these migration should not depend on or affect the data
  * of any database view.
  */
-- (void)setupDatabaseWithSafeBlockingMigrations:(void (^_Nonnull)())safeBlockingMigrationsBlock;
+- (void)setupDatabaseWithSafeBlockingMigrations:(void (^_Nonnull)(void))safeBlockingMigrationsBlock;
 
 - (void)deleteThreadsAndMessages;
 - (void)resetSignalStorage;
@@ -63,6 +62,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nullable, nonatomic, readonly) YapDatabaseConnection *dbReadConnection;
 @property (nullable, nonatomic, readonly) YapDatabaseConnection *dbReadWriteConnection;
+
++ (void)migrateToSharedData;
 
 @end
 

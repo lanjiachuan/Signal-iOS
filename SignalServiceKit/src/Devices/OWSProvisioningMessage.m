@@ -5,7 +5,7 @@
 #import "OWSProvisioningMessage.h"
 #import "OWSProvisioningCipher.h"
 #import "OWSProvisioningProtos.pb.h"
-#import <25519/Curve25519.h>
+#import <Curve25519Kit/Curve25519.h>
 #import <AxolotlKit/NSData+keyVersionByte.h>
 #import <HKDFKit/HKDFKit.h>
 
@@ -18,6 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSString *accountIdentifier;
 @property (nonatomic, readonly) NSData *theirPublicKey;
 @property (nonatomic, readonly) NSData *profileKey;
+@property (nonatomic, readonly) BOOL areReadReceiptsEnabled;
 @property (nonatomic, readonly) NSString *provisioningCode;
 
 @end
@@ -29,6 +30,7 @@ NS_ASSUME_NONNULL_BEGIN
                      theirPublicKey:(NSData *)theirPublicKey
                   accountIdentifier:(NSString *)accountIdentifier
                          profileKey:(NSData *)profileKey
+                readReceiptsEnabled:(BOOL)areReadReceiptsEnabled
                    provisioningCode:(NSString *)provisioningCode
 {
     self = [super init];
@@ -41,6 +43,7 @@ NS_ASSUME_NONNULL_BEGIN
     _theirPublicKey = theirPublicKey;
     _accountIdentifier = accountIdentifier;
     _profileKey = profileKey;
+    _areReadReceiptsEnabled = areReadReceiptsEnabled;
     _provisioningCode = provisioningCode;
 
     return self;
@@ -49,26 +52,27 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSData *)buildEncryptedMessageBody
 {
     OWSProvisioningProtosProvisionMessageBuilder *messageBuilder = [OWSProvisioningProtosProvisionMessageBuilder new];
-    [messageBuilder setIdentityKeyPublic:self.myPublicKey];
-    [messageBuilder setIdentityKeyPrivate:self.myPrivateKey];
-    [messageBuilder setNumber:self.accountIdentifier];
-    [messageBuilder setProvisioningCode:self.provisioningCode];
-    [messageBuilder setUserAgent:@"OWI"];
-    [messageBuilder setProfileKey:self.profileKey];
+    messageBuilder.identityKeyPublic = self.myPublicKey;
+    messageBuilder.identityKeyPrivate = self.myPrivateKey;
+    messageBuilder.number = self.accountIdentifier;
+    messageBuilder.provisioningCode = self.provisioningCode;
+    messageBuilder.userAgent = @"OWI";
+    messageBuilder.readReceipts = self.areReadReceiptsEnabled;
+    messageBuilder.profileKey = self.profileKey;
 
     NSData *plainTextProvisionMessage = [[messageBuilder build] data];
 
     OWSProvisioningCipher *cipher = [[OWSProvisioningCipher alloc] initWithTheirPublicKey:self.theirPublicKey];
     NSData *_Nullable encryptedProvisionMessage = [cipher encrypt:plainTextProvisionMessage];
     if (encryptedProvisionMessage == nil) {
-        DDLogError(@"Failed to encrypt provision message");
+        OWSFail(@"Failed to encrypt provision message");
         return nil;
     }
 
     OWSProvisioningProtosProvisionEnvelopeBuilder *envelopeBuilder = [OWSProvisioningProtosProvisionEnvelopeBuilder new];
     // Note that this is a one-time-use *cipher* public key, not our Signal *identity* public key
-    [envelopeBuilder setPublicKey:[cipher.ourPublicKey prependKeyType]];
-    [envelopeBuilder setBody:encryptedProvisionMessage];
+    envelopeBuilder.publicKey = [cipher.ourPublicKey prependKeyType];
+    envelopeBuilder.body = encryptedProvisionMessage;
 
     return [[envelopeBuilder build] data];
 }

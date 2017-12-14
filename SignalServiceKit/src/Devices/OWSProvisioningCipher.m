@@ -3,9 +3,10 @@
 //
 
 #import "OWSProvisioningCipher.h"
-#import <25519/Curve25519.h>
+#import <Curve25519Kit/Curve25519.h>
 #import <HKDFKit/HKDFKit.h>
 #import <SignalServiceKit/Cryptography.h>
+#import <CommonCrypto/CommonCrypto.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -86,9 +87,8 @@ NS_ASSUME_NONNULL_BEGIN
         return nil;
     }
 
-    // allow space for message + padding any incomplete block
-    NSUInteger blockCount = ceil((double)dataToEncrypt.length / (double)kCCBlockSizeAES128);
-    size_t ciphertextBufferSize = blockCount * kCCBlockSizeAES128;
+    // allow space for message + padding any incomplete block. PKCS7 padding will always add at least one byte.
+    size_t ciphertextBufferSize = dataToEncrypt.length + kCCBlockSizeAES128;
 
     // message format is (iv || ciphertext)
     NSMutableData *encryptedMessage = [NSMutableData dataWithLength:iv.length + ciphertextBufferSize];
@@ -117,8 +117,8 @@ NS_ASSUME_NONNULL_BEGIN
         DDLogError(@"Encryption failed with status: %d", cryptStatus);
         return nil;
     }
-    
-    return [encryptedMessage copy];
+
+    return [encryptedMessage subdataWithRange:NSMakeRange(0, iv.length + bytesEncrypted)];
 }
 
 - (NSData *)macForMessage:(NSData *)message withKey:(NSData *)macKey

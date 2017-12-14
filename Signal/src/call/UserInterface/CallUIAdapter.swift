@@ -5,6 +5,8 @@
 import Foundation
 import PromiseKit
 import CallKit
+import SignalServiceKit
+import SignalMessaging
 import WebRTC
 
 protocol CallUIAdaptee {
@@ -37,7 +39,7 @@ extension CallUIAdaptee {
         let callViewController = CallViewController(call: call)
         callViewController.modalTransitionStyle = .crossDissolve
 
-        guard let presentingViewController = Environment.getCurrent().signalsViewController else {
+        guard let presentingViewController = UIApplication.shared.frontmostViewControllerIgnoringAlerts else {
             owsFail("in \(#function) view controller unexpectedly nil")
             return
         }
@@ -89,9 +91,9 @@ extension CallUIAdaptee {
             // So we use the non-CallKit call UI.
             Logger.info("\(TAG) choosing non-callkit adaptee for simulator.")
             adaptee = NonCallKitCallUIAdaptee(callService: callService, notificationsAdapter: notificationsAdapter)
-        } else if #available(iOS 10.0, *), Environment.getCurrent().preferences.isCallKitEnabled() {
+        } else if #available(iOS 10.0, *), Environment.current().preferences.isCallKitEnabled() {
             Logger.info("\(TAG) choosing callkit adaptee for iOS10+")
-            adaptee = CallKitCallUIAdaptee(callService: callService, notificationsAdapter: notificationsAdapter)
+            adaptee = CallKitCallUIAdaptee(callService: callService, contactsManager: contactsManager, notificationsAdapter: notificationsAdapter)
         } else {
             Logger.info("\(TAG) choosing non-callkit adaptee")
             adaptee = NonCallKitCallUIAdaptee(callService: callService, notificationsAdapter: notificationsAdapter)
@@ -100,6 +102,8 @@ extension CallUIAdaptee {
         audioService = CallAudioService(handleRinging: adaptee.hasManualRinger)
 
         super.init()
+
+        SwiftSingletons.register(self)
 
         callService.addObserverAndSyncState(observer: self)
     }

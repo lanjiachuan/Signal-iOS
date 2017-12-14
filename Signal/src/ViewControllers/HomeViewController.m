@@ -7,27 +7,24 @@
 #import "AppSettingsViewController.h"
 #import "ConversationViewController.h"
 #import "InboxTableViewCell.h"
-#import "NSDate+millisecondTimeStamp.h"
 #import "NewContactThreadViewController.h"
 #import "OWSContactsManager.h"
 #import "OWSNavigationController.h"
-#import "OWSProfileManager.h"
 #import "ProfileViewController.h"
-#import "PropertyListPreferences.h"
 #import "PushManager.h"
 #import "Signal-Swift.h"
+#import "SignalApp.h"
 #import "TSAccountManager.h"
 #import "TSDatabaseView.h"
 #import "TSGroupThread.h"
 #import "TSStorageManager.h"
-#import "UIUtil.h"
-#import "VersionMigrations.h"
 #import "ViewControllerUtils.h"
 #import <PromiseKit/AnyPromise.h>
+#import <SignalMessaging/OWSFormat.h>
+#import <SignalMessaging/UIUtil.h>
+#import <SignalServiceKit/NSDate+OWS.h>
 #import <SignalServiceKit/OWSBlockingManager.h>
-#import <SignalServiceKit/OWSDisappearingMessagesJob.h>
 #import <SignalServiceKit/OWSMessageSender.h>
-#import <SignalServiceKit/TSMessagesManager.h>
 #import <SignalServiceKit/TSOutgoingMessage.h>
 #import <SignalServiceKit/Threading.h>
 #import <YapDatabase/YapDatabaseViewChange.h>
@@ -59,8 +56,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 
 @property (nonatomic, readonly) AccountManager *accountManager;
 @property (nonatomic, readonly) OWSContactsManager *contactsManager;
-@property (nonatomic, readonly) ExperienceUpgradeFinder *experienceUpgradeFinder;
-@property (nonatomic, readonly) TSMessagesManager *messagesManager;
+@property (nonatomic, readonly) OWSMessageManager *messagesManager;
 @property (nonatomic, readonly) OWSMessageSender *messageSender;
 @property (nonatomic, readonly) OWSBlockingManager *blockingManager;
 
@@ -107,14 +103,15 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 
 - (void)commonInit
 {
-    _accountManager = [Environment getCurrent].accountManager;
-    _contactsManager = [Environment getCurrent].contactsManager;
-    _messagesManager = [TSMessagesManager sharedManager];
-    _messageSender = [Environment getCurrent].messageSender;
+    _accountManager = SignalApp.sharedApp.accountManager;
+    _contactsManager = [Environment current].contactsManager;
+    _messagesManager = [OWSMessageManager sharedManager];
+    _messageSender = [Environment current].messageSender;
     _blockingManager = [OWSBlockingManager sharedManager];
     _blockedPhoneNumberSet = [NSSet setWithArray:[_blockingManager blockedPhoneNumbers]];
 
-    _experienceUpgradeFinder = [ExperienceUpgradeFinder new];
+    // Ensure ExperienceUpgradeFinder has been initialized.
+    ExperienceUpgradeFinder.sharedManager;
 
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(blockedPhoneNumbersDidChange:)
@@ -133,8 +130,16 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
                                                  name:UIApplicationDidEnterBackgroundNotification
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(applicationDidBecomeActive:)
+                                                 name:UIApplicationDidBecomeActiveNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(yapDatabaseModified:)
                                                  name:YapDatabaseModifiedNotification
+                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(yapDatabaseModified:)
+                                                 name:YapDatabaseModifiedExternallyNotification
                                                object:nil];
 }
 
@@ -170,12 +175,12 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     self.view.backgroundColor = [UIColor whiteColor];
 
     // TODO: Remove this.
-    [[Environment getCurrent] setHomeViewController:self];
+    [SignalApp.sharedApp setHomeViewController:self];
 
     self.navigationItem.rightBarButtonItem =
         [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemCompose
                                                       target:self
-                                                      action:@selector(composeNew)];
+                                                      action:@selector(showNewConversationView)];
 
     ReminderView *archiveReminderView = [ReminderView new];
     archiveReminderView.text = NSLocalizedString(
@@ -220,6 +225,13 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     [emptyBoxLabel autoPinToTopLayoutGuideOfViewController:self withInset:0];
     [emptyBoxLabel autoPinToBottomLayoutGuideOfViewController:self withInset:0];
 
+    UIRefreshControl *pullToRefreshView = [UIRefreshControl new];
+    pullToRefreshView.tintColor = [UIColor grayColor];
+    [pullToRefreshView addTarget:self
+                          action:@selector(pullToRefreshPerformed:)
+                forControlEvents:UIControlEventValueChanged];
+    [self.tableView insertSubview:pullToRefreshView atIndex:0];
+
     [self updateReminderViews];
 }
 
@@ -252,7 +264,6 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     // because this uses the table data source, `tableViewSetup` must happen
     // after mappings have been set up in `showInboxGrouping`
     [self tableViewSetUp];
-
 
     self.segmentedControl = [[UISegmentedControl alloc] initWithItems:@[
         NSLocalizedString(@"WHISPER_NAV_BAR_TITLE", nil),
@@ -346,13 +357,13 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     [self.navigationController pushViewController:vc animated:NO];
 }
 
-- (void)composeNew
+- (void)showNewConversationView
 {
     NewContactThreadViewController *viewController = [NewContactThreadViewController new];
 
     [self.contactsManager requestSystemContactsOnceWithCompletion:^(NSError *_Nullable error) {
         if (error) {
-            DDLogError(@"%@ Error when requesting contacts: %@", self.tag, error);
+            DDLogError(@"%@ Error when requesting contacts: %@", self.logTag, error);
         }
         // Even if there is an error fetching contacts we proceed to the next screen.
         // As the compose view will present the proper thing depending on contact access.
@@ -488,23 +499,27 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     self.isAppInBackground = YES;
 }
 
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
+    // It's possible a thread was created while we where in the background. But since we don't honor contact
+    // requests unless the app is in the foregrond, we must check again here upon becoming active.
+    if ([TSThread numberOfKeysInCollection] > 0) {
+        [self.contactsManager requestSystemContactsOnceWithCompletion:^(NSError *_Nullable error) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self updateReminderViews];
+            });
+        }];
+    }
+}
+
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
 
-    if (self.newlyRegisteredUser) {
-        [self.editingDbConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
-            [self.experienceUpgradeFinder markAllAsSeenWithTransaction:transaction];
-        }];
-        // Start running the disappearing messages job in case the newly registered user
-        // enables this feature
-        [[OWSDisappearingMessagesJob sharedJob] startIfNecessary];
-        [[OWSProfileManager sharedManager] ensureLocalProfileCached];
-    } else if (!self.viewHasEverAppeared) {
+    if (!self.viewHasEverAppeared) {
+        self.viewHasEverAppeared = YES;
         [self displayAnyUnseenUpgradeExperience];
     }
-
-    self.viewHasEverAppeared = YES;
 }
 
 #pragma mark - startup
@@ -515,7 +530,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 
     __block NSArray<ExperienceUpgrade *> *unseenUpgrades;
     [self.editingDbConnection readWithBlock:^(YapDatabaseReadTransaction *transaction) {
-        unseenUpgrades = [self.experienceUpgradeFinder allUnseenWithTransaction:transaction];
+        unseenUpgrades = [ExperienceUpgradeFinder.sharedManager allUnseenWithTransaction:transaction];
     }];
     return unseenUpgrades;
 }
@@ -525,7 +540,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     AssertIsOnMainThread();
 
     [self.editingDbConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
-        [self.experienceUpgradeFinder markAllAsSeenWithTransaction:transaction];
+        [ExperienceUpgradeFinder.sharedManager markAllAsSeenWithTransaction:transaction];
     }];
 }
 
@@ -557,7 +572,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 
 - (BOOL)shouldShowMissingContactsPermissionView
 {
-    if ([TSContactThread numberOfKeysInCollection] == 0) {
+    if (!self.contactsManager.systemContactsHaveBeenRequestedAtLeastOnce) {
         return NO;
     }
 
@@ -609,6 +624,16 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     return InboxTableViewCell.rowHeight;
 }
 
+- (void)pullToRefreshPerformed:(UIRefreshControl *)refreshControl
+{
+    OWSAssert([NSThread isMainThread]);
+    DDLogInfo(@"%@ beggining refreshing.", self.logTag);
+    [SignalApp.sharedApp.messageFetcherJob run].always(^{
+        DDLogInfo(@"%@ ending refreshing.", self.logTag);
+        [refreshControl endRefreshing];
+    });
+}
+
 #pragma mark Table Swipe to Delete
 
 - (void)tableView:(UITableView *)tableView
@@ -617,7 +642,6 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 {
     return;
 }
-
 
 - (NSArray *)tableView:(UITableView *)tableView editActionsForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -677,7 +701,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
             TSOutgoingMessage *message = [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
                                                                              inThread:thread
                                                                      groupMetaMessage:TSGroupMessageQuit];
-            [self.messageSender sendMessage:message
+            [self.messageSender enqueueMessage:message
                 success:^{
                     [self dismissViewControllerAnimated:YES
                                              completion:^{
@@ -731,8 +755,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     NSString *unreadString = NSLocalizedString(@"WHISPER_NAV_BAR_TITLE", nil);
 
     if (numberOfItems > 0) {
-        unreadString =
-            [unreadString stringByAppendingFormat:@" (%@)", [ViewControllerUtils formatInt:(int)numberOfItems]];
+        unreadString = [unreadString stringByAppendingFormat:@" (%@)", [OWSFormat formatInt:(int)numberOfItems]];
     }
 
     [_segmentedControl setTitle:unreadString forSegmentAtIndex:0];
@@ -751,6 +774,9 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     keyboardOnViewAppearing:(BOOL)keyboardOnViewAppearing
         callOnViewAppearing:(BOOL)callOnViewAppearing
 {
+    // At most one.
+    OWSAssert(!keyboardOnViewAppearing || !callOnViewAppearing);
+
     if (thread == nil) {
         OWSFail(@"Thread unexpectedly nil");
         return;
@@ -758,8 +784,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
 
     // We do this synchronously if we're already on the main thread.
     DispatchMainThreadSafe(^{
-        ConversationViewController *mvc =
-            [[ConversationViewController alloc] initWithNibName:@"ConversationViewController" bundle:nil];
+        ConversationViewController *mvc = [ConversationViewController new];
         [mvc configureForThread:thread
             keyboardOnViewAppearing:keyboardOnViewAppearing
                 callOnViewAppearing:callOnViewAppearing];
@@ -795,7 +820,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
                         animateDismissal:animateDismissal];
 }
 
-- (void)presentViewControllerWithBlock:(void (^)())presentationBlock animateDismissal:(BOOL)animateDismissal
+- (void)presentViewControllerWithBlock:(void (^)(void))presentationBlock animateDismissal:(BOOL)animateDismissal
 {
     OWSAssert([NSThread isMainThread]);
     OWSAssert(presentationBlock);
@@ -807,7 +832,7 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
     // Third present the new view controller using presentationBlock.
 
     // Define a block to perform the second step.
-    void (^dismissNavigationBlock)() = ^{
+    void (^dismissNavigationBlock)(void) = ^{
         if (self.navigationController.viewControllers.lastObject != self) {
             [CATransaction begin];
             [CATransaction setCompletionBlock:^{
@@ -1049,18 +1074,6 @@ typedef NS_ENUM(NSInteger, CellState) { kArchiveState, kInboxState };
                             value:[UIColor ows_darkGrayColor]
                             range:NSMakeRange(firstLine.length + 1, secondLine.length)];
     _emptyBoxLabel.attributedText = fullLabelString;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

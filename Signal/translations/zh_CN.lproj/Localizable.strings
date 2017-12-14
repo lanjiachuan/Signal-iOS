@@ -37,15 +37,6 @@
 /* The label for the 'save' button in action sheets. */
 "ALERT_SAVE" = "保存";
 
-/* A message for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_MESSAGE" = "正在验证这是否为有效的Signal账户。";
-
-/* A title for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_TITLE" = "验证中";
-
-/* registration button text */
-"ALREADY_HAVE_ACCOUNT_BUTTON" = "已经有Signal账户了吗？";
-
 /* No comment provided by engineer. */
 "ANSWER_CALL_BUTTON_TITLE" = "接听";
 
@@ -62,7 +53,7 @@
 "APN_MESSAGE_IN_GROUP_DETAILED" = "%@ 在 %@ 群组：%@";
 
 /* Text prompting user to edit their profile name. */
-"APP_SETTINGS_EDIT_PROFILE_NAME_PROMPT" = "Enter your name";
+"APP_SETTINGS_EDIT_PROFILE_NAME_PROMPT" = "输入您的名称";
 
 /* Message format for the 'new app version available' alert. Embeds: {{The latest app version number.}}. */
 "APP_UPDATE_NAG_ALERT_MESSAGE_FORMAT" = "%@ 版已在 App Store 上线";
@@ -86,7 +77,7 @@
 "ATTACHMENT" = "附件";
 
 /* Title for the 'attachment approval' dialog. */
-"ATTACHMENT_APPROVAL_DIALOG_TITLE" = "附件";
+"ATTACHMENT_APPROVAL_DIALOG_TITLE" = "Attachment";
 
 /* Format string for file extension label in call interstitial view */
 "ATTACHMENT_APPROVAL_FILE_EXTENSION_FORMAT" = "文件类型: %@";
@@ -95,7 +86,7 @@
 "ATTACHMENT_APPROVAL_FILE_SIZE_FORMAT" = "大小: %@";
 
 /* Label for 'send' button in the 'attachment approval' dialog. */
-"ATTACHMENT_APPROVAL_SEND_BUTTON" = "发送";
+"ATTACHMENT_APPROVAL_SEND_BUTTON" = "Send";
 
 /* Generic filename for an attachment with no known name */
 "ATTACHMENT_DEFAULT_FILENAME" = "附件";
@@ -206,7 +197,7 @@
 "BLOCK_OFFER_ACTIONSHEET_TITLE_FORMAT" = "将 %@ 加入黑名单";
 
 /* Label for generic done button. */
-"BUTTON_DONE" = "Done";
+"BUTTON_DONE" = "完成";
 
 /* Alert message when calling and permissions for microphone are missing */
 "CALL_AUDIO_PERMISSION_MESSAGE" = "Signal需要访问您的麦克风用于通话和录取语音消息。您可以在系统设置中授予访问权限。";
@@ -216,6 +207,9 @@
 
 /* Accessibilty label for placing call button */
 "CALL_LABEL" = "打电话";
+
+/* Text shown on call screen in place of remote video */
+"CALL_REMOTE_VIDEO_DISABLED" = "请升级到 iOS 9 或更新的系统来查看远程视频。";
 
 /* Call setup status label after outgoing call times out */
 "CALL_SCREEN_STATUS_NO_ANSWER" = "没有应答。";
@@ -232,6 +226,21 @@
 /* Title for alert offering to call a user. */
 "CALL_USER_ALERT_TITLE" = "打电话？";
 
+/* Accessibility label for accepting incoming calls */
+"CALL_VIEW_ACCEPT_INCOMING_CALL_LABEL" = "接听来电";
+
+/* Accessibility label for selection the audio source */
+"CALL_VIEW_AUDIO_SOURCE_LABEL" = "音频";
+
+/* Accessibility label for declining incoming calls */
+"CALL_VIEW_DECLINE_INCOMING_CALL_LABEL" = "拒接来电";
+
+/* Accessibility label for hang up call */
+"CALL_VIEW_HANGUP_LABEL" = "结束通话";
+
+/* Accessibility label for muting the microphone */
+"CALL_VIEW_MUTE_LABEL" = "静音";
+
 /* Reminder to the user of the benefits of enabling CallKit and disabling CallKit privacy. */
 "CALL_VIEW_SETTINGS_NAG_DESCRIPTION_ALL" = "如果您改变设置，您将可以直接在锁屏界面上看到来电人的名称与号码并且应答来电。\n\n更多信息请见隐私设置。";
 
@@ -241,8 +250,14 @@
 /* Label for button that dismiss the call view's settings nag. */
 "CALL_VIEW_SETTINGS_NAG_NOT_NOW_BUTTON" = "以后";
 
-/* Label for button that shows the privacy settings */
+/* Label for button that shows the privacy settings. */
 "CALL_VIEW_SETTINGS_NAG_SHOW_CALL_SETTINGS" = "显示隐私设置";
+
+/* Accessibility label to switch to audio only */
+"CALL_VIEW_SWITCH_TO_AUDIO_LABEL" = "转为音频通话";
+
+/* Accessibility label to switch to video call */
+"CALL_VIEW_SWITCH_TO_VIDEO_LABEL" = "转为视频通话";
 
 /* notification action */
 "CALLBACK_BUTTON_TITLE" = "回电话";
@@ -261,6 +276,15 @@
 
 /* Activity Sheet label */
 "COMPARE_SAFETY_NUMBER_ACTION" = "和剪切版相比较";
+
+/* Table section header for contact listing when composing a new message */
+"COMPOSE_MESSAGE_CONTACT_SECTION_TITLE" = "联系人";
+
+/* Table section header for group listing when composing a new message */
+"COMPOSE_MESSAGE_GROUP_SECTION_TITLE" = "群组";
+
+/* Table section header for invite listing when composing a new message */
+"COMPOSE_MESSAGE_INVITE_SECTION_TITLE" = "邀请";
 
 /* Multiline label explaining why compose-screen contact picker is empty. */
 "COMPOSE_SCREEN_MISSING_CONTACTS_PERMISSION" = "如果想查看您的哪些联系人是 Signal 用户，请在系统设置中允许 Signal 访问联系人。";
@@ -290,7 +314,7 @@
 "CONFIRMATION_TITLE" = "确认";
 
 /* An indicator that a contact has been blocked. */
-"CONTACT_CELL_IS_BLOCKED" = "黑名单";
+"CONTACT_CELL_IS_BLOCKED" = "已加入黑名单";
 
 /* An indicator that a contact is no longer verified. */
 "CONTACT_CELL_IS_NO_LONGER_VERIFIED" = "未验证";
@@ -368,16 +392,22 @@
 "CONVERSATION_SETTINGS_VIEW_SHARE_PROFILE_WITH_USER" = "共享您的资料";
 
 /* Message shown in conversation view that offers to add an unknown user to your phone's contacts. */
-"CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER" = "Add to Contacts";
+"CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER" = "添加到联系人";
 
 /* Message shown in conversation view that offers to share your profile with a user. */
-"CONVERSATION_VIEW_ADD_USER_TO_PROFILE_WHITELIST_OFFER" = "Share Your Profile With This User";
+"CONVERSATION_VIEW_ADD_USER_TO_PROFILE_WHITELIST_OFFER" = "与该用户共享您的资料";
 
 /* Title for the group of buttons show for unknown contacts offering to add them to contacts, etc. */
-"CONVERSATION_VIEW_CONTACTS_OFFER_TITLE" = "This user is not in your contacts.";
+"CONVERSATION_VIEW_CONTACTS_OFFER_TITLE" = "该用户不在您的联系人列表中。";
+
+/* Indicates that the app is loading more messages in this conversation. */
+"CONVERSATION_VIEW_LOADING_MORE_MESSAGES" = "正在加载消息...";
+
+/* Indicator on truncated text messages that they can be tapped to see the entire text message. */
+"CONVERSATION_VIEW_OVERSIZE_TEXT_TAP_FOR_MORE" = "点击查看详情";
 
 /* Message shown in conversation view that offers to block an unknown user. */
-"CONVERSATION_VIEW_UNKNOWN_CONTACT_BLOCK_OFFER" = "Block This User";
+"CONVERSATION_VIEW_UNKNOWN_CONTACT_BLOCK_OFFER" = "屏蔽该用户";
 
 /* ActionSheet title */
 "CORRUPTED_SESSION_DESCRIPTION" = "重置session后可以收到来自 %@的消息, 但是无法恢复已经被破坏的消息.";
@@ -389,13 +419,43 @@
 "CREATE_NEW_GROUP" = "创建新的组群";
 
 /* Title for the 'crop/scale image' dialog. */
-"CROP_SCALE_IMAGE_VIEW_TITLE" = "Move and Scale";
+"CROP_SCALE_IMAGE_VIEW_TITLE" = "移动与缩放";
 
 /* Subtitle shown while the app is updating its database. */
 "DATABASE_VIEW_OVERLAY_SUBTITLE" = "这需要耗费 1 分钟左右。";
 
 /* Title shown while the app is updating its database. */
 "DATABASE_VIEW_OVERLAY_TITLE" = "更新数据库";
+
+/* Message indicating that the debug log is being uploaded. */
+"DEBUG_LOG_ACTIVITY_INDICATOR" = "Sending Debug Log...";
+
+/* Message of the debug log alert. */
+"DEBUG_LOG_ALERT_MESSAGE" = "What would you like to do with the link to your debug log?";
+
+/* Label for the 'Open a Bug Report' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_BUG_REPORT" = "Open a Bug Report";
+
+/* Label for the 'copy link' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_COPY_LINK" = "Copy Link";
+
+/* Label for the 'email debug log' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_EMAIL" = "Email Support";
+
+/* Label for the 'send to self' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_SEND_TO_SELF" = "Send to Self";
+
+/* Title of the debug log alert. */
+"DEBUG_LOG_ALERT_TITLE" = "One More Step";
+
+/* Title of the alert indicating the debug log upload failed. */
+"DEBUG_LOG_FAILURE_ALERT_TITLE" = "Failed to Submit Debug Log";
+
+/* Message of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_MESSAGE" = "The gist link was copied in your clipboard. You are about to be redirected to the GitHub issue list.";
+
+/* Title of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_TITLE" = "GitHub Redirection";
 
 /* {{Short Date}} when device last communicated with Signal Server. */
 "DEVICE_LAST_ACTIVE_AT_LABEL" = "最新活动设备: %@";
@@ -460,6 +520,12 @@
 /* Short name for edit menu item to copy contents of media message. */
 "EDIT_ITEM_COPY_ACTION" = "复制";
 
+/* Short name for edit menu item to delete contents of media message. */
+"EDIT_ITEM_DELETE_ACTION" = "删除";
+
+/* Short name for edit menu item to show message metadata. */
+"EDIT_ITEM_MESSAGE_METADATA_ACTION" = "信息";
+
 /* Short name for edit menu item to save contents of media message. */
 "EDIT_ITEM_SAVE_ACTION" = "保存";
 
@@ -520,6 +586,9 @@
 /* Error mesage indicating that message send failed due to block list */
 "ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_BLOCK_LIST" = "无法向黑名单用户发送消息";
 
+/* Error mesage indicating that message send failed due to failed attachment write */
+"ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_FAILED_ATTACHMENT_WRITE" = "因无法写附件而失败。";
+
 /* Generic error used whenver Signal can't contact the server */
 "ERROR_DESCRIPTION_NO_INTERNET" = "Signal无法联网. 请尝试使用其它网络或者使用移动数据.";
 
@@ -537,6 +606,9 @@
 
 /* Error message when attempting to send message */
 "ERROR_DESCRIPTION_UNREGISTERED_RECIPIENT" = "联系人不是Signal用户。";
+
+/* Error message when unable to receive an attachment because the sending client is too old. */
+"ERROR_MESSAGE_ATTACHMENT_FROM_OLD_CLIENT" = "失败：请告知发送人升级 Signal 后重新发送。";
 
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_DUPLICATE_MESSAGE" = "收到了一个重复的消息。";
@@ -564,12 +636,6 @@
 
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_WRONG_TRUSTED_IDENTITY_KEY" = "安全码已经改变. 点击验证.";
-
-/* during registration */
-"EXISTING_USER_REGISTRATION_ALERT_BODY" = "目前Signal一个号码只能同时在一台移动设备上使用.";
-
-/* during registration, embeds {{device type}}, e.g. \"iPhone\" or \"iPad\" */
-"EXISTING_USER_REGISTRATION_ALERT_TITLE" = "激活当前设备 %@ 会使得和此电话关联的其它设备无法使用.";
 
 /* Message for the alert indicating the 'export with signal' file had an invalid filename. */
 "EXPORT_WITH_SIGNAL_ERROR_MESSAGE_INVALID_FILENAME" = "无效文件名。";
@@ -610,14 +676,35 @@
 /* A label for generic attachments. */
 "GENERIC_ATTACHMENT_LABEL" = "附件";
 
+/* Error displayed when there is a failure fetching gifs from the remote service. */
+"GIF_PICKER_ERROR_FETCH_FAILURE" = "无法读取所请求的 GIF。请确认您是否处于在线状态。";
+
+/* Generic error displayed when picking a gif */
+"GIF_PICKER_ERROR_GENERIC" = "发生了一个未知的错误。";
+
+/* Shown when selected gif couldn't be fetched */
+"GIF_PICKER_FAILURE_ALERT_TITLE" = "无法选择 GIF";
+
+/* Alert message shown when user tries to search for GIFs without entering any search terms. */
+"GIF_PICKER_VIEW_MISSING_QUERY" = "请输入您的搜索词。";
+
+/* Title for the 'gif picker' dialog. */
+"GIF_PICKER_VIEW_TITLE" = "GIF 查找";
+
+/* Indicates that an error occured while searching. */
+"GIF_VIEW_SEARCH_ERROR" = "错误。点击重试。";
+
+/* Indicates that the user's search had no results. */
+"GIF_VIEW_SEARCH_NO_RESULTS" = "无结果。";
+
+/* Placeholder text for the search field in gif view */
+"GIF_VIEW_SEARCH_PLACEHOLDER_TEXT" = "输入您的搜索词";
+
 /* No comment provided by engineer. */
 "GROUP_AVATAR_CHANGED" = "头像更变成功。";
 
 /* No comment provided by engineer. */
 "GROUP_CREATED" = "组群已成功创建。";
-
-/* No comment provided by engineer. */
-"GROUP_CREATING" = "创建新的组群";
 
 /* Message shown in conversation view that indicates there were issues with group creation. */
 "GROUP_CREATION_FAILED" = "不是所有成员都能被添加到群组中。点击重试。";
@@ -671,7 +758,7 @@
 "GROUP_YOU_LEFT" = "您退出了这个群。";
 
 /* A label for conversations with blocked users. */
-"HOME_VIEW_BLOCKED_CONTACT_CONVERSATION" = "已经入黑名单";
+"HOME_VIEW_BLOCKED_CONTACT_CONVERSATION" = "已加入黑名单";
 
 /* Call setup status label */
 "IN_CALL_CONNECTING" = "链接中...";
@@ -767,13 +854,10 @@
 "LINKING_DEVICE_FAILED_TITLE" = "绑定设备失败";
 
 /* table cell label in conversation settings */
-"LIST_GROUP_MEMBERS_ACTION" = "显示成员列表";
+"LIST_GROUP_MEMBERS_ACTION" = "成员列表";
 
 /* No comment provided by engineer. */
 "LOGGING_SECTION" = "信息记录日志";
-
-/* No comment provided by engineer. */
-"ME_STRING" = "我";
 
 /* media picker option to take photo or video */
 "MEDIA_FROM_CAMERA_BUTTON" = "相机";
@@ -787,11 +871,65 @@
 /* No comment provided by engineer. */
 "MESSAGE_COMPOSEVIEW_TITLE" = "新信息";
 
-/* message footer for delivered messages */
+/* Label for file size of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_FILE_SIZE" = "文件大小";
+
+/* Label for the MIME type of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MIME_TYPE" = "MIME类型";
+
+/* Label for 'missing' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MISSING_FILE" = "附件丢失";
+
+/* Label for 'not yet downloaded' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_NOT_YET_DOWNLOADED" = "未下载";
+
+/* Status label for messages which are delivered. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_DELIVERED" = "已投递";
+
+/* Status label for messages which are failed. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_FAILED" = "失败";
+
+/* Status label for messages which are read. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_READ" = "已读";
+
+/* Status label for messages which are sending. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENDING" = "正在发送";
+
+/* Status label for messages which are sent. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENT" = "已发送";
+
+/* Status label for messages which are uploading. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_UPLOADING" = "正在上传";
+
+/* Label for messages without a body or attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_NO_ATTACHMENT_OR_BODY" = "该消息没有内容或附件";
+
+/* Label for the 'received date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_RECEIVED_DATE_TIME" = "已接收";
+
+/* Label for the 'sender' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENDER" = "发送人";
+
+/* Label for the 'sent date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENT_DATE_TIME" = "已发送";
+
+/* Label for the original filename of any attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SOURCE_FILENAME" = "文件名";
+
+/* Title for the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_TITLE" = "消息";
+
+/* message status for message delivered to their recipient. */
 "MESSAGE_STATUS_DELIVERED" = "已传达";
 
 /* message footer for failed messages */
 "MESSAGE_STATUS_FAILED" = "发送失败。点击查看详情。";
+
+/* message footer for read messages */
+"MESSAGE_STATUS_READ" = "已读";
+
+/* message status while message is sending. */
+"MESSAGE_STATUS_SENDING" = "正在发送...";
 
 /* message footer for sent messages */
 "MESSAGE_STATUS_SENT" = "已发送";
@@ -821,7 +959,7 @@
 "MESSAGES_VIEW_GROUP_N_MEMBERS_BLOCKED_FORMAT" = "群组中%@个成员已在您的黑名单中";
 
 /* Text for banner in group conversation view that offers to share your profile with this group. */
-"MESSAGES_VIEW_GROUP_PROFILE_WHITELIST_BANNER" = "Share Your Profile With This Group?";
+"MESSAGES_VIEW_GROUP_PROFILE_WHITELIST_BANNER" = "是否与该群组共享您的资料?";
 
 /* Indicates that more than one member of this group conversation is no longer verified. */
 "MESSAGES_VIEW_N_MEMBERS_NO_LONGER_VERIFIED" = "该群组多个成员不再标记为已验证。点击打开选项。";
@@ -855,23 +993,8 @@
    Alert title when camera is not authorized */
 "MISSING_CAMERA_PERMISSION_TITLE" = "Signal需要访问您的摄像头";
 
-/* No comment provided by engineer. */
-"MSGVIEW_MISSED_CALL_BECAUSE_OF_CHANGED_IDENTITY" = "来电未接，因为他们的安全码已改变。";
-
 /* notification title. Embeds {{caller's name or phone number}} */
 "MSGVIEW_MISSED_CALL_WITH_NAME" = "来自 %@ 的未接来电。";
-
-/* No comment provided by engineer. */
-"MSGVIEW_RECEIVED_CALL" = "您收到了 %@ 的来电。";
-
-/* No comment provided by engineer. */
-"MSGVIEW_THEY_TRIED_TO_CALL_YOU" = "%@ 拨打了您的电话。";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_CALLED" = "您呼叫了 %@。";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_TRIED_TO_CALL" = "您拨打了%@的电话。";
 
 /* No comment provided by engineer. */
 "MULTIDEVICE_PAIRING_MAX_DESC" = "您无法匹配更多的设备。";
@@ -883,7 +1006,7 @@
 "MUTE_BEHAVIOR_EXPLANATION" = "无有效接收人，消息发送失败。";
 
 /* A button to skip a view. */
-"NAVIGATION_ITEM_SKIP_BUTTON" = "Skip";
+"NAVIGATION_ITEM_SKIP_BUTTON" = "跳过";
 
 /* No comment provided by engineer. */
 "NETWORK_ERROR_RECOVERY" = "请检查您的网络连接并重试。";
@@ -915,7 +1038,7 @@
 /* The title for the 'create group' button. */
 "NEW_GROUP_CREATE_BUTTON" = "新建";
 
-/* The navbar title for the 'new group' view. */
+/* Used in place of the group name when a group has not yet been named. */
 "NEW_GROUP_DEFAULT_TITLE" = "新群组";
 
 /* An indicator that a user is a member of the new group. */
@@ -932,6 +1055,9 @@
 
 /* The alert title if user tries to exit the new group view without saving changes. */
 "NEW_GROUP_VIEW_UNSAVED_CHANGES_TITLE" = "未保存的修改";
+
+/* No comment provided by engineer. */
+"new_message" = "新消息";
 
 /* A label for the 'add by phone number' button in the 'new non-contact conversation' view */
 "NEW_NONCONTACT_CONVERSATION_VIEW_BUTTON" = "搜索";
@@ -989,10 +1115,7 @@
 "OUTGOING_INCOMPLETE_CALL" = "未应答的拨出呼叫";
 
 /* A display format for oversize text messages. */
-"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@... [点击查看更多]";
-
-/* The title of the 'oversize text message' view. */
-"OVERSIZE_TEXT_MESSAGE_VIEW_TITLE" = "消息";
+"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@…";
 
 /* A format for a label showing an example phone number. Embeds {{the example phone number}}. */
 "PHONE_NUMBER_EXAMPLE_FORMAT" = "范例：%@";
@@ -1097,31 +1220,31 @@
 "PROFILE_VIEW_CLEAR_AVATAR" = "清除头像";
 
 /* Error message shown when user tries to update profile with a profile name that is too long. */
-"PROFILE_VIEW_ERROR_PROFILE_NAME_TOO_LONG" = "Your profile name is too long.";
+"PROFILE_VIEW_ERROR_PROFILE_NAME_TOO_LONG" = "您的资料名称太长。";
 
 /* Error message shown when a profile update fails. */
 "PROFILE_VIEW_ERROR_UPDATE_FAILED" = "资料更新失败。";
 
 /* Default text for the profile name field of the profile view. */
-"PROFILE_VIEW_NAME_DEFAULT_TEXT" = "Enter your name";
+"PROFILE_VIEW_NAME_DEFAULT_TEXT" = "输入您的名称";
 
 /* Label for the profile avatar field of the profile view. */
-"PROFILE_VIEW_PROFILE_AVATAR_FIELD" = "Avatar";
+"PROFILE_VIEW_PROFILE_AVATAR_FIELD" = "头像";
 
 /* Description of the user profile. */
-"PROFILE_VIEW_PROFILE_DESCRIPTION" = "Your Signal Profile will be visible to your contacts, when you initiate new conversations, and when you share it with other users and groups.";
+"PROFILE_VIEW_PROFILE_DESCRIPTION" = "您的Signal资料在以下情况将可见：您已有的联系人，在建立新对话时，以及您与其它用户群组分享时。";
 
 /* Link to more information about the user profile. */
-"PROFILE_VIEW_PROFILE_DESCRIPTION_LINK" = "Tap here to learn more.";
+"PROFILE_VIEW_PROFILE_DESCRIPTION_LINK" = "点击了解更多资讯。";
 
 /* Label for the profile name field of the profile view. */
-"PROFILE_VIEW_PROFILE_NAME_FIELD" = "Profile Name";
+"PROFILE_VIEW_PROFILE_NAME_FIELD" = "资料名称";
 
 /* Button to save the profile view in the profile view. */
-"PROFILE_VIEW_SAVE_BUTTON" = "Save";
+"PROFILE_VIEW_SAVE_BUTTON" = "保存";
 
 /* Alert title that indicates the user's profile view is being saved. */
-"PROFILE_VIEW_SAVING" = "Saving...";
+"PROFILE_VIEW_SAVING" = "正在保存...";
 
 /* Title for the profile view. */
 "PROFILE_VIEW_TITLE" = "资料";
@@ -1149,12 +1272,6 @@
 
 /* No comment provided by engineer. */
 "RATING_TITLE" = "支持 Signal";
-
-/* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_MESSAGE" = "请输入正确的国家编码";
-
-/* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_TITLE" = "国家编码错误";
 
 /* No comment provided by engineer. */
 "REGISTER_CONTACTS_WELCOME" = "欢迎！";
@@ -1252,10 +1369,19 @@
 /* No comment provided by engineer. */
 "SECURE_SESSION_RESET" = "安全会话被重置。";
 
+/* Label for 'select gif to attach' action sheet button */
+"SELECT_GIF_BUTTON" = "GIF";
+
+/* Table section header for conversations you haven't recently used. */
+"SELECT_THREAD_TABLE_OTHER_CHATS_TITLE" = "Other Contacts";
+
+/* Table section header for recently active conversations */
+"SELECT_THREAD_TABLE_RECENT_CHATS_TITLE" = "Recent Chats";
+
 /* No comment provided by engineer. */
 "SEND_AGAIN_BUTTON" = "重新发送";
 
-/* No comment provided by engineer. */
+/* Label for the send button in the conversation view. */
 "SEND_BUTTON_TITLE" = "发送";
 
 /* Header title for the 'send external file' view. */
@@ -1331,7 +1457,7 @@
 "SETTINGS_BLOCK_LIST_NO_SEARCH_RESULTS" = "无搜索结果";
 
 /* Label for the block list section of the settings view */
-"SETTINGS_BLOCK_LIST_TITLE" = "黑名单";
+"SETTINGS_BLOCK_LIST_TITLE" = "已加入黑名单";
 
 /* Accessibility hint for the settings button */
 "SETTINGS_BUTTON_ACCESSIBILITY" = "设置";
@@ -1387,6 +1513,12 @@
 /* Settings table view cell label */
 "SETTINGS_PRIVACY_TITLE" = "隐私";
 
+/* Label for the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPT" = "已读回执";
+
+/* An explanation of the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPTS_SECTION_FOOTER" = "消息已读时，查看和分享已读状态。该设置为可选设置，且对所有对话生效。";
+
 /* No comment provided by engineer. */
 "SETTINGS_SCREEN_SECURITY" = "开启屏幕锁定功能";
 
@@ -1416,6 +1548,24 @@
 
 /* action sheet item */
 "SHARE_ACTION_TWEET" = "推特";
+
+/* Indicates that the share extension is still loading. */
+"SHARE_EXTENSION_LOADING" = "Loading...";
+
+/* Message indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_MESSAGE" = "Launch the Signal app to register.";
+
+/* Title indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_TITLE" = "Not Registered";
+
+/* Message indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_MESSAGE" = "Launch the Signal app to update.";
+
+/* Title indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_TITLE" = "Not Ready";
+
+/* Shown when trying to share content to a Signal user for the share extension. Followed by failure details. */
+"SHARE_EXTENSION_UNABLE_TO_BUILD_ATTACHMENT_ALERT_TITLE" = "Unable to Prepare Attachment";
 
 /* Action sheet item */
 "SHOW_SAFETY_NUMBER_ACTION" = "显示新的安全码";
@@ -1477,6 +1627,9 @@
 /* Displayed if for some reason we can't determine a contacts phone number *or* name */
 "UNKNOWN_CONTACT_NAME" = "未知的联系人";
 
+/* Indicates an unknown or unrecognizable value. */
+"UNKNOWN_VALUE" = "无法识别";
+
 /* button title for unlinking a device */
 "UNLINK_ACTION" = "解绑";
 
@@ -1517,13 +1670,22 @@
 "UPGRADE_EXPERIENCE_CALLKIT_TITLE" = "滑动即可应答";
 
 /* button label shown one time, after user upgrades app */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_BUTTON" = "Set up Your Profile";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_BUTTON" = "设置您的资料";
 
 /* Description of new profile feature for upgrading (existing) users */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_DESCRIPTION" = "You can now share a profile photo and name with your friends on Signal.";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_DESCRIPTION" = "您现在可以与您的Signal好友分享分享资料照片和名称。";
 
 /* Header for upgrade experience */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_TITLE" = "Ready for Your Closeup?";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_TITLE" = "准备好来张特写了吗？";
+
+/* Description of new profile feature for upgrading (existing) users */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_DESCRIPTION" = "您现在可以选择查看和分享消息的已读状态。";
+
+/* button label shown one time, after upgrade */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_PRIVACY_SETTINGS" = "在隐私设置中启用已读回执。";
+
+/* Header for upgrade experience */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_TITLE" = "加入已读回执功能";
 
 /* Description of video calling to upgrading (existing) users */
 "UPGRADE_EXPERIENCE_VIDEO_DESCRIPTION" = "Signal 已开始支持安全的视频通话。正常的开始Signal通话，点击相机按钮，对方即可看到您。";
@@ -1552,8 +1714,8 @@
 /* button text during registration to request another SMS code be sent */
 "VERIFICATION_CHALLENGE_SUBMIT_AGAIN" = "重新通过SMS短信发送验证码";
 
-/* button text during registration to submit your SMS verification code */
-"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "提交验证码";
+/* button text during registration to submit your SMS verification code. */
+"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "提交";
 
 /* Label indicating the phone number currently being verified. */
 "VERIFICATION_PHONE_NUMBER_FORMAT" = "输入我们发送到 %@ 的验证码";
@@ -1592,7 +1754,7 @@
 "VOICE_MESSAGE_TOO_SHORT_ALERT_TITLE" = "语音消息";
 
 /* Activity indicator title, shown upon returning to the device manager, until you complete the provisioning process on desktop */
-"WAITING_TO_COMPLETE_DEVICE_LINK_TEXT" = "Signal桌面版设置成功。";
+"WAITING_TO_COMPLETE_DEVICE_LINK_TEXT" = "请完成 Signal 桌面版设置。";
 
 /* No comment provided by engineer. */
 "WHISPER_NAV_BAR_TITLE" = "收件箱";

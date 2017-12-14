@@ -5,26 +5,27 @@
 #import "UpdateGroupViewController.h"
 #import "AddToGroupViewController.h"
 #import "AvatarViewHelper.h"
-#import "BlockListUIUtils.h"
-#import "ContactTableViewCell.h"
-#import "ContactsViewHelper.h"
-#import "Environment.h"
-#import "OWSContactsManager.h"
 #import "OWSNavigationController.h"
-#import "OWSTableViewController.h"
 #import "Signal-Swift.h"
-#import "SignalKeyingStorage.h"
-#import "TSOutgoingMessage.h"
-#import "UIUtil.h"
-#import "UIView+OWS.h"
-#import "UIViewController+OWS.h"
 #import "ViewControllerUtils.h"
-#import <SignalServiceKit/NSDate+millisecondTimeStamp.h>
+#import <SignalMessaging/BlockListUIUtils.h>
+#import <SignalMessaging/ContactTableViewCell.h>
+#import <SignalMessaging/ContactsViewHelper.h>
+#import <SignalMessaging/Environment.h>
+#import <SignalMessaging/NSString+OWS.h>
+#import <SignalMessaging/OWSContactsManager.h>
+#import <SignalMessaging/OWSTableViewController.h>
+#import <SignalMessaging/SignalKeyingStorage.h>
+#import <SignalMessaging/UIUtil.h>
+#import <SignalMessaging/UIView+OWS.h>
+#import <SignalMessaging/UIViewController+OWS.h>
+#import <SignalServiceKit/NSDate+OWS.h>
 #import <SignalServiceKit/OWSMessageSender.h>
 #import <SignalServiceKit/SecurityUtils.h>
 #import <SignalServiceKit/SignalAccount.h>
 #import <SignalServiceKit/TSGroupModel.h>
 #import <SignalServiceKit/TSGroupThread.h>
+#import <SignalServiceKit/TSOutgoingMessage.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -83,7 +84,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)commonInit
 {
-    _messageSender = [Environment getCurrent].messageSender;
+    _messageSender = [Environment current].messageSender;
     _contactsViewHelper = [[ContactsViewHelper alloc] initWithDelegate:self];
     _avatarViewHelper = [AvatarViewHelper new];
     _avatarViewHelper.delegate = self;
@@ -119,7 +120,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self.view addSubview:self.tableViewController.view];
     [_tableViewController.view autoPinWidthToSuperview];
     [_tableViewController.view autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:firstSection];
-    [_tableViewController.view autoPinEdgeToSuperviewEdge:ALEdgeBottom];
+    [self autoPinViewToBottomGuideOrKeyboard:self.tableViewController.view];
 
     [self updateTableContents];
 }
@@ -188,7 +189,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     [threadInfoView addSubview:avatarView];
     [avatarView autoVCenterInSuperview];
-    [avatarView autoPinLeadingToSuperView];
+    [avatarView autoPinLeadingToSuperview];
     [avatarView autoSetDimension:ALDimensionWidth toSize:kAvatarSize];
     [avatarView autoSetDimension:ALDimensionHeight toSize:kAvatarSize];
     _groupAvatar = self.thread.groupModel.groupImage;
@@ -196,8 +197,7 @@ NS_ASSUME_NONNULL_BEGIN
 
     UITextField *groupNameTextField = [UITextField new];
     _groupNameTextField = groupNameTextField;
-    self.groupNameTextField.text =
-        [self.thread.groupModel.groupName stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    self.groupNameTextField.text = [self.thread.groupModel.groupName ows_stripped];
     groupNameTextField.textColor = [UIColor blackColor];
     groupNameTextField.font = [UIFont ows_dynamicTypeTitle2Font];
     groupNameTextField.placeholder
@@ -208,7 +208,7 @@ NS_ASSUME_NONNULL_BEGIN
                  forControlEvents:UIControlEventEditingChanged];
     [threadInfoView addSubview:groupNameTextField];
     [groupNameTextField autoVCenterInSuperview];
-    [groupNameTextField autoPinTrailingToSuperView];
+    [groupNameTextField autoPinTrailingToSuperview];
     [groupNameTextField autoPinLeadingToTrailingOfView:avatarView margin:16.f];
 
     [avatarView
@@ -373,8 +373,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     OWSAssert(self.conversationSettingsViewDelegate);
 
-    NSString *groupName =
-        [self.groupNameTextField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    NSString *groupName = [self.groupNameTextField.text ows_stripped];
     TSGroupModel *groupModel = [[TSGroupModel alloc] initWithTitle:groupName
                                                          memberIds:[self.memberRecipientIds.allObjects mutableCopy]
                                                              image:self.groupAvatar
@@ -470,7 +469,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - OWSTableViewControllerDelegate
 
-- (void)tableViewDidScroll
+- (void)tableViewWillBeginDragging
 {
     [self.groupNameTextField resignFirstResponder];
 }
@@ -497,6 +496,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)avatarDidChange:(UIImage *)image
 {
+    OWSAssert([NSThread isMainThread]);
     OWSAssert(image);
 
     self.groupAvatar = image;

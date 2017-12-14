@@ -2,14 +2,15 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
-#import <AFNetworking/AFHTTPSessionManager.h>
-
-#import "OWSCensorshipConfiguration.h"
-#import "OWSHTTPSecurityPolicy.h"
 #import "OWSSignalService.h"
+#import "NSNotificationCenter+OWS.h"
+#import "OWSCensorshipConfiguration.h"
+#import "OWSError.h"
+#import "OWSHTTPSecurityPolicy.h"
 #import "TSAccountManager.h"
 #import "TSConstants.h"
 #import "TSStorageManager.h"
+#import <AFNetworking/AFHTTPSessionManager.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -28,7 +29,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 @property (nonatomic, readonly) OWSCensorshipConfiguration *censorshipConfiguration;
 
-@property (nonatomic) BOOL hasCensoredPhoneNumber;
+@property (atomic) BOOL hasCensoredPhoneNumber;
 
 @property (atomic) BOOL isCensorshipCircumventionActive;
 
@@ -73,7 +74,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 {
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(registrationStateDidChange:)
-                                                 name:kNSNotificationName_RegistrationStateDidChange
+                                                 name:RegistrationStateDidChangeNotification
                                                object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(localNumberDidChange:)
@@ -88,14 +89,12 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 - (void)updateHasCensoredPhoneNumber
 {
-    OWSAssert([NSThread isMainThread]);
-
     NSString *localNumber = [TSAccountManager localNumber];
 
     if (localNumber) {
         self.hasCensoredPhoneNumber = [self.censorshipConfiguration isCensoredPhoneNumber:localNumber];
     } else {
-        DDLogError(@"%@ no known phone number to check for censorship.", self.tag);
+        DDLogError(@"%@ no known phone number to check for censorship.", self.logTag);
         self.hasCensoredPhoneNumber = NO;
     }
 
@@ -110,8 +109,6 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 - (void)setIsCensorshipCircumventionManuallyActivated:(BOOL)value
 {
-    OWSAssert([NSThread isMainThread]);
-
     [[TSStorageManager sharedManager] setObject:@(value)
                                          forKey:kTSStorageManager_isCensorshipCircumventionManuallyActivated
                                    inCollection:kTSStorageManager_OWSSignalService];
@@ -121,16 +118,12 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 - (void)updateIsCensorshipCircumventionActive
 {
-    OWSAssert([NSThread isMainThread]);
-
     self.isCensorshipCircumventionActive
         = (self.isCensorshipCircumventionManuallyActivated || self.hasCensoredPhoneNumber);
 }
 
 - (void)setIsCensorshipCircumventionActive:(BOOL)isCensorshipCircumventionActive
 {
-    OWSAssert([NSThread isMainThread]);
-
     @synchronized(self)
     {
         if (_isCensorshipCircumventionActive == isCensorshipCircumventionActive) {
@@ -141,9 +134,9 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
     }
 
     [[NSNotificationCenter defaultCenter]
-        postNotificationName:kNSNotificationName_IsCensorshipCircumventionActiveDidChange
-                      object:nil
-                    userInfo:nil];
+        postNotificationNameAsync:kNSNotificationName_IsCensorshipCircumventionActiveDidChange
+                           object:nil
+                         userInfo:nil];
 }
 
 - (BOOL)isCensorshipCircumventionActive
@@ -157,7 +150,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 - (AFHTTPSessionManager *)signalServiceSessionManager
 {
     if (self.isCensorshipCircumventionActive) {
-        DDLogInfo(@"%@ using reflector HTTPSessionManager", self.tag);
+        DDLogInfo(@"%@ using reflector HTTPSessionManager via: %@", self.logTag, self.domainFrontingBaseURL);
         return self.reflectorSignalServiceSessionManager;
     } else {
         return self.defaultSignalServiceSessionManager;
@@ -186,13 +179,18 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
     // Target fronting domain
     OWSAssert(self.isCensorshipCircumventionActive);
-    NSString *frontingHost = [self.censorshipConfiguration frontingHost:localNumber];
-    if (self.isCensorshipCircumventionManuallyActivated && self.manualCensorshipCircumventionDomain.length > 0) {
-        frontingHost = self.manualCensorshipCircumventionDomain;
-    };
-    NSURL *baseURL = [[NSURL alloc] initWithString:[self.censorshipConfiguration frontingHost:localNumber]];
-    OWSAssert(baseURL);
     
+    NSURL *baseURL;
+
+    if (self.isCensorshipCircumventionManuallyActivated && self.manualCensorshipCircumventionDomain.length > 0) {
+        baseURL = [[NSURL alloc] initWithString:[NSString stringWithFormat:@"https://%@", self.manualCensorshipCircumventionDomain]];
+    }
+    
+    if (baseURL == nil) {
+        baseURL = [[NSURL alloc] initWithString:[self.censorshipConfiguration frontingHost:localNumber]];
+    }
+    
+    OWSAssert(baseURL);
     return baseURL;
 }
 
@@ -217,7 +215,7 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 - (AFHTTPSessionManager *)CDNSessionManager
 {
     if (self.isCensorshipCircumventionActive) {
-        DDLogInfo(@"%@ using reflector CDNSessionManager", self.tag);
+        DDLogInfo(@"%@ using reflector CDNSessionManager via: %@", self.logTag, self.domainFrontingBaseURL);
         return self.reflectorCDNSessionManager;
     } else {
         return self.defaultCDNSessionManager;
@@ -259,35 +257,72 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 #pragma mark - Google Pinning Policy
 
++ (nullable NSData *)certificateDataWithName:(NSString *)name error:(NSError **)error
+{
+    if (!name.length) {
+        OWSFail(@"%@ expected name with length > 0", self.logTag);
+        *error = OWSErrorMakeAssertionError();
+        return nil;
+    }
+
+    NSBundle *bundle = [NSBundle bundleForClass:self.class];
+    NSString *path = [bundle pathForResource:name ofType:@"crt"];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
+        OWSFail(@"%@ Missing certificate for name: %@", self.logTag, name);
+        *error = OWSErrorMakeAssertionError();
+        return nil;
+    }
+
+    NSData *_Nullable certData = [NSData dataWithContentsOfFile:path options:0 error:error];
+
+    if (*error != nil) {
+        OWSFail(@"%@ Failed to read cert file with path: %@", self.logTag, path);
+        return nil;
+    }
+
+    if (certData.length == 0) {
+        OWSFail(@"%@ empty certData for name: %@", self.logTag, name);
+        return nil;
+    }
+
+    DDLogVerbose(@"%@ read cert data with name: %@ length: %lu", self.logTag, name, (unsigned long)certData.length);
+    return certData;
+}
+
 /**
  * We use the Google Pinning Policy when connecting to our censorship circumventing reflector,
  * which is hosted on Google.
  */
-+ (AFSecurityPolicy *)googlePinningPolicy {
++ (AFSecurityPolicy *)googlePinningPolicy
+{
     static AFSecurityPolicy *securityPolicy = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSError *error;
-        NSString *path = [NSBundle.mainBundle pathForResource:@"GIAG2" ofType:@"crt"];
 
-        if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
-            @throw [NSException
-                    exceptionWithName:@"Missing server certificate"
-                    reason:[NSString stringWithFormat:@"Missing signing certificate for service googlePinningPolicy"]
-                    userInfo:nil];
-        }
-        
-        NSData *googleCertData = [NSData dataWithContentsOfFile:path options:0 error:&error];
-        if (!googleCertData) {
+        NSMutableSet<NSData *> *certificates = [NSMutableSet new];
+
+        // GIAG2 cert plus root certs from pki.goog
+        NSArray<NSString *> *certNames = @[ @"GIAG2", @"GSR2", @"GSR4", @"GTSR1", @"GTSR2", @"GTSR3", @"GTSR4" ];
+
+        for (NSString *certName in certNames) {
+            NSError *error;
+            NSData *certData = [self certificateDataWithName:certName error:&error];
             if (error) {
-                @throw [NSException exceptionWithName:@"OWSSignalServiceHTTPSecurityPolicy" reason:@"Couln't read google pinning cert" userInfo:nil];
-            } else {
-                NSString *reason = [NSString stringWithFormat:@"Reading google pinning cert faile with error: %@", error];
-                @throw [NSException exceptionWithName:@"OWSSignalServiceHTTPSecurityPolicy" reason:reason userInfo:nil];
+                DDLogError(@"%@ Failed to get %@ certificate data with error: %@", self.logTag, certName, error);
+                @throw [NSException exceptionWithName:@"OWSSignalService_UnableToReadCertificate"
+                                               reason:error.description
+                                             userInfo:nil];
             }
+
+            if (!certData) {
+                DDLogError(@"%@ No data for certificate: %@", self.logTag, certName);
+                @throw [NSException exceptionWithName:@"OWSSignalService_UnableToReadCertificate"
+                                               reason:error.description
+                                             userInfo:nil];
+            }
+            [certificates addObject:certData];
         }
-        
-        NSSet<NSData *> *certificates = [NSSet setWithObject:googleCertData];
+
         securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeCertificate withPinnedCertificates:certificates];
     });
     return securityPolicy;
@@ -297,16 +332,12 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 - (void)registrationStateDidChange:(NSNotification *)notification
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self updateHasCensoredPhoneNumber];
-    });
+    [self updateHasCensoredPhoneNumber];
 }
 
 - (void)localNumberDidChange:(NSNotification *)notification
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self updateHasCensoredPhoneNumber];
-    });
+    [self updateHasCensoredPhoneNumber];
 }
 
 #pragma mark - Manual Censorship Circumvention
@@ -319,8 +350,6 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 - (void)setManualCensorshipCircumventionDomain:(NSString *)value
 {
-    OWSAssert([NSThread isMainThread]);
-
     [[TSStorageManager sharedManager] setObject:value
                                          forKey:kTSStorageManager_ManualCensorshipCircumventionDomain
                                    inCollection:kTSStorageManager_OWSSignalService];
@@ -328,31 +357,15 @@ NSString *const kNSNotificationName_IsCensorshipCircumventionActiveDidChange =
 
 - (NSString *)manualCensorshipCircumventionCountryCode
 {
-    OWSAssert([NSThread isMainThread]);
-
     return [[TSStorageManager sharedManager] objectForKey:kTSStorageManager_ManualCensorshipCircumventionCountryCode
                                              inCollection:kTSStorageManager_OWSSignalService];
 }
 
 - (void)setManualCensorshipCircumventionCountryCode:(NSString *)value
 {
-    OWSAssert([NSThread isMainThread]);
-
     [[TSStorageManager sharedManager] setObject:value
                                          forKey:kTSStorageManager_ManualCensorshipCircumventionCountryCode
                                    inCollection:kTSStorageManager_OWSSignalService];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

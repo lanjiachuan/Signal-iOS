@@ -24,15 +24,18 @@ typedef NS_ENUM(NSInteger, OWSErrorCode) {
     OWSErrorCodeMessageSendDisabledDueToPreKeyUpdateFailures = 777405,
     OWSErrorCodeMessageSendFailedToBlockList = 777406,
     OWSErrorCodeMessageSendNoValidRecipients = 777407,
-    OWSErrorCodeContactsUpdaterRateLimit = 777407,
+    OWSErrorCodeContactsUpdaterRateLimit = 777408,
+    OWSErrorCodeCouldNotWriteAttachmentData = 777409,
+    OWSErrorCodeMessageDeletedBeforeSent = 777410,
 };
 
 extern NSError *OWSErrorWithCodeDescription(OWSErrorCode code, NSString *description);
-extern NSError *OWSErrorMakeUnableToProcessServerResponseError();
-extern NSError *OWSErrorMakeFailedToSendOutgoingMessageError();
-extern NSError *OWSErrorMakeNoSuchSignalRecipientError();
-extern NSError *OWSErrorMakeAssertionError();
-extern NSError *OWSErrorMakeMessageSendDisabledDueToPreKeyUpdateFailuresError();
-extern NSError *OWSErrorMakeMessageSendFailedToBlockListError();
+extern NSError *OWSErrorMakeUnableToProcessServerResponseError(void);
+extern NSError *OWSErrorMakeFailedToSendOutgoingMessageError(void);
+extern NSError *OWSErrorMakeNoSuchSignalRecipientError(void);
+extern NSError *OWSErrorMakeAssertionError(void);
+extern NSError *OWSErrorMakeMessageSendDisabledDueToPreKeyUpdateFailuresError(void);
+extern NSError *OWSErrorMakeMessageSendFailedToBlockListError(void);
+extern NSError *OWSErrorMakeWriteAttachmentDataError(void);
 
 NS_ASSUME_NONNULL_END

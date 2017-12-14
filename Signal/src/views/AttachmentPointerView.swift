@@ -3,6 +3,8 @@
 //
 
 import Foundation
+import SignalServiceKit
+import SignalMessaging
 
 class AttachmentPointerView: UIView {
 
@@ -37,6 +39,36 @@ class AttachmentPointerView: UIView {
 
         createSubviews()
         updateViews()
+
+        if attachmentPointer.state == .downloading {
+            NotificationCenter.default.addObserver(self,
+                                                   selector:#selector(attachmentDownloadProgress(_:)),
+                                                   name:NSNotification.Name.attachmentDownloadProgress,
+                                                   object:nil)
+        }
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    internal func attachmentDownloadProgress(_ notification: Notification) {
+        guard let attachmentId = attachmentPointer.uniqueId else {
+            owsFail("Missing attachment id.")
+            return
+        }
+        guard let progress = (notification as NSNotification).userInfo?[kAttachmentDownloadProgressKey] as? NSNumber else {
+            owsFail("Attachment download notification missing progress.")
+            return
+        }
+        guard let notificationAttachmentId = (notification as NSNotification).userInfo?[kAttachmentDownloadAttachmentIDKey] as? String else {
+            owsFail("Attachment download notification missing attachment id.")
+            return
+        }
+        guard notificationAttachmentId == attachmentId else {
+            return
+        }
+        self.progress = CGFloat(progress.floatValue)
     }
 
     @available(*, unavailable)
@@ -79,11 +111,11 @@ class AttachmentPointerView: UIView {
         self.addSubview(progressView)
         progressView.autoPinWidthToSuperview()
         progressView.autoPinEdge(.top, to: .bottom, of: nameLabel, withOffset: 6)
-        progressView.autoSetDimension(.height, toSize: 8)
 
         self.addSubview(statusLabel)
         statusLabel.textAlignment = .center
         statusLabel.adjustsFontSizeToFitWidth = true
+        statusLabel.numberOfLines = 2
 
         statusLabel.textColor = self.textColor
         statusLabel.font = UIFont.ows_footnote()
@@ -119,14 +151,16 @@ class AttachmentPointerView: UIView {
             case .downloading:
                 return NSLocalizedString("ATTACHMENT_DOWNLOADING_STATUS_IN_PROGRESS", comment: "Status label when an attachment is currently downloading")
             case .failed:
-                return NSLocalizedString("ATTACHMENT_DOWNLOADING_STATUS_FAILED", comment: "Status label when an attachment download has failed.")
+                return self.attachmentPointer.mostRecentFailureLocalizedText ?? NSLocalizedString("ATTACHMENT_DOWNLOADING_STATUS_FAILED", comment: "Status label when an attachment download has failed.")
             }
         }()
 
         if attachmentPointer.state == .downloading {
             progressView.isHidden = false
+            progressView.autoSetDimension(.height, toSize: 8)
         } else {
             progressView.isHidden = true
+            progressView.autoSetDimension(.height, toSize: 0)
         }
     }
 

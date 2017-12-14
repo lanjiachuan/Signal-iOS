@@ -34,7 +34,8 @@ NS_ASSUME_NONNULL_BEGIN
     return @"TSThread";
 }
 
-- (instancetype)initWithUniqueId:(NSString *)uniqueId {
+- (instancetype)initWithUniqueId:(NSString *_Nullable)uniqueId
+{
     self = [super initWithUniqueId:uniqueId];
 
     if (self) {
@@ -203,7 +204,7 @@ NS_ASSUME_NONNULL_BEGIN
                       NSString *collection, NSString *key, id object, id metadata, NSUInteger index, BOOL *stop) {
 
                       if (![object conformsToProtocol:@protocol(OWSReadTracking)]) {
-                          OWSFail(@"%@ Unexpected object in unseen messages: %@", self.tag, object);
+                          OWSFail(@"%@ Unexpected object in unseen messages: %@", self.logTag, object);
                           return;
                       }
                       [messages addObject:(id<OWSReadTracking>)object];
@@ -221,7 +222,7 @@ NS_ASSUME_NONNULL_BEGIN
                       NSString *collection, NSString *key, id object, id metadata, NSUInteger index, BOOL *stop) {
 
                       if (![object conformsToProtocol:@protocol(OWSReadTracking)]) {
-                          OWSFail(@"%@ Unexpected object in unread messages: %@", self.tag, object);
+                          OWSFail(@"%@ Unexpected object in unread messages: %@", self.logTag, object);
                           return;
                       }
                       [messages addObject:(id<OWSReadTracking>)object];
@@ -382,46 +383,16 @@ NS_ASSUME_NONNULL_BEGIN
             [mutedUntilDate timeIntervalSinceDate:now] > 0);
 }
 
-// This method does the work for the "updateWith..." methods.  Please see
-// the header for a discussion of those methods.
-- (void)applyChangeToSelfAndLatestThread:(YapDatabaseReadWriteTransaction *)transaction
-                             changeBlock:(void (^)(TSThread *))changeBlock
-{
-    OWSAssert(transaction);
-    
-    changeBlock(self);
-    
-    NSString *collection = [[self class] collection];
-    TSThread *latestInstance = [transaction objectForKey:self.uniqueId inCollection:collection];
-    if (latestInstance) {
-        changeBlock(latestInstance);
-        [latestInstance saveWithTransaction:transaction];
-    } else {
-        // This message has not yet been saved.
-        [self saveWithTransaction:transaction];
-    }
-}
+#pragma mark - Update With... Methods
 
 - (void)updateWithMutedUntilDate:(NSDate *)mutedUntilDate
 {
     [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-        [self applyChangeToSelfAndLatestThread:transaction
-                                            changeBlock:^(TSThread *thread) {
-                                                [thread setMutedUntilDate:mutedUntilDate];
-                                            }];
+        [self applyChangeToSelfAndLatestCopy:transaction
+                                 changeBlock:^(TSThread *thread) {
+                                     [thread setMutedUntilDate:mutedUntilDate];
+                                 }];
     }];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

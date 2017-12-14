@@ -8,6 +8,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 @class TSThread;
 
+typedef NS_ENUM(NSInteger, OWSInteractionType) {
+    OWSInteractionType_Unknown,
+    OWSInteractionType_IncomingMessage,
+    OWSInteractionType_OutgoingMessage,
+    OWSInteractionType_Error,
+    OWSInteractionType_Call,
+    OWSInteractionType_Info,
+    OWSInteractionType_UnreadIndicator,
+    OWSInteractionType_Offer,
+};
+
 @interface TSInteraction : TSYapDatabaseObject
 
 - (instancetype)initWithTimestamp:(uint64_t)timestamp inThread:(TSThread *)thread;
@@ -16,7 +27,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) TSThread *thread;
 @property (nonatomic, readonly) uint64_t timestamp;
 
-- (NSString *)description;
+- (OWSInteractionType)interactionType;
+
+- (TSThread *)threadWithTransaction:(YapDatabaseReadWriteTransaction *)transaction;
 
 /**
  * When an interaction is updated, it often affects the UI for it's containing thread. Touching it's thread will notify
@@ -26,8 +39,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark Utility Method
 
-+ (instancetype)interactionForTimestamp:(uint64_t)timestamp
-                        withTransaction:(YapDatabaseReadWriteTransaction *)transaction;
++ (NSArray<TSInteraction *> *)interactionsWithTimestamp:(uint64_t)timestamp
+                                                ofClass:(Class)clazz
+                                        withTransaction:(YapDatabaseReadWriteTransaction *)transaction;
 
 - (NSDate *)dateForSorting;
 - (uint64_t)timestampForSorting;

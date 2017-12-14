@@ -5,8 +5,7 @@
 #import "PhoneNumberUtil.h"
 #import "ContactsManagerProtocol.h"
 #import "FunctionalUtil.h"
-#import "Util.h"
-#import <libPhoneNumber-iOS/NBPhoneNumber.h>
+#import <libPhoneNumber_iOS/NBPhoneNumber.h>
 
 @interface PhoneNumberUtil ()
 
@@ -82,13 +81,18 @@
 
 // country code -> country name
 + (NSString *)countryNameFromCountryCode:(NSString *)countryCode {
+    OWSAssert(countryCode);
+
     NSDictionary *countryCodeComponent = @{NSLocaleCountryCode : countryCode};
     NSString *identifier               = [NSLocale localeIdentifierFromComponents:countryCodeComponent];
-    NSString *country                  = [NSLocale.currentLocale displayNameForKey:NSLocaleIdentifier value:identifier];
-    if (country.length < 1) {
-        country = [NSLocale.systemLocale displayNameForKey:NSLocaleIdentifier value:identifier];
+    NSString *countryName = [NSLocale.currentLocale displayNameForKey:NSLocaleIdentifier value:identifier];
+    if (countryName.length < 1) {
+        countryName = [NSLocale.systemLocale displayNameForKey:NSLocaleIdentifier value:identifier];
     }
-    return country;
+    if (countryName.length < 1) {
+        countryName = NSLocalizedString(@"UNKNOWN_VALUE", "Indicates an unknown or unrecognizable value.");
+    }
+    return countryName;
 }
 
 // country code -> calling code

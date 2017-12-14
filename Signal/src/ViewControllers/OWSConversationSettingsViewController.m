@@ -8,19 +8,20 @@
 #import "Environment.h"
 #import "FingerprintViewController.h"
 #import "OWSAddToContactViewController.h"
-#import "OWSAvatarBuilder.h"
 #import "OWSBlockingManager.h"
 #import "OWSContactsManager.h"
-#import "OWSProfileManager.h"
 #import "PhoneNumber.h"
 #import "ShowGroupMembersViewController.h"
 #import "Signal-Swift.h"
 #import "UIFont+OWS.h"
-#import "UIUtil.h"
 #import "UIView+OWS.h"
 #import "UpdateGroupViewController.h"
-#import <25519/Curve25519.h>
-#import <SignalServiceKit/NSDate+millisecondTimeStamp.h>
+#import <Curve25519Kit/Curve25519.h>
+#import <SignalMessaging/OWSAvatarBuilder.h>
+#import <SignalMessaging/OWSProfileManager.h>
+#import <SignalMessaging/OWSUserProfile.h>
+#import <SignalMessaging/UIUtil.h>
+#import <SignalServiceKit/NSDate+OWS.h>
 #import <SignalServiceKit/OWSDisappearingConfigurationUpdateInfoMessage.h>
 #import <SignalServiceKit/OWSDisappearingMessagesConfiguration.h>
 #import <SignalServiceKit/OWSMessageSender.h>
@@ -94,8 +95,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)commonInit
 {
     _accountManager = [TSAccountManager sharedInstance];
-    _contactsManager = [Environment getCurrent].contactsManager;
-    _messageSender = [Environment getCurrent].messageSender;
+    _contactsManager = [Environment current].contactsManager;
+    _messageSender = [Environment current].messageSender;
     _blockingManager = [OWSBlockingManager sharedManager];
     _contactsViewHelper = [[ContactsViewHelper alloc] initWithDelegate:self];
 
@@ -126,7 +127,7 @@ NS_ASSUME_NONNULL_BEGIN
         threadName =
             [PhoneNumber bestEffortFormatPartialUserSpecifiedTextToLookLikeAPhoneNumber:self.thread.contactIdentifier];
     } else if (threadName.length == 0 && [self isGroupThread]) {
-        threadName = NSLocalizedString(@"NEW_GROUP_DEFAULT_TITLE", @"");
+        threadName = [MessageStrings newGroupDefaultTitle];
     }
     return threadName;
 }
@@ -171,7 +172,7 @@ NS_ASSUME_NONNULL_BEGIN
     OWSAssert([self.thread isKindOfClass:[TSContactThread class]]);
     TSContactThread *contactThread = (TSContactThread *)self.thread;
     NSString *recipientId = contactThread.contactIdentifier;
-    return self.contactsManager.allContactsMap[recipientId] != nil;
+    return [self.contactsManager.lastKnownContactRecipientIds containsObject:recipientId];
 }
 
 #pragma mark - ContactEditingDelegate
@@ -180,7 +181,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     [self updateTableContents];
 
-    DDLogDebug(@"%@ %s", self.tag, __PRETTY_FUNCTION__);
+    DDLogDebug(@"%@ %s", self.logTag, __PRETTY_FUNCTION__);
     [self dismissViewControllerAnimated:NO completion:nil];
 }
 
@@ -195,10 +196,10 @@ NS_ASSUME_NONNULL_BEGIN
         // Saving normally returns you to the "Show Contact" view
         // which we're not interested in, so we skip it here. There is
         // an unfortunate blip of the "Show Contact" view on slower devices.
-        DDLogDebug(@"%@ completed editing contact.", self.tag);
+        DDLogDebug(@"%@ completed editing contact.", self.logTag);
         [self dismissViewControllerAnimated:NO completion:nil];
     } else {
-        DDLogDebug(@"%@ canceled editing contact.", self.tag);
+        DDLogDebug(@"%@ canceled editing contact.", self.logTag);
         [self dismissViewControllerAnimated:YES completion:nil];
     }
 }
@@ -345,7 +346,7 @@ NS_ASSUME_NONNULL_BEGIN
             UIImageView *iconView = [strongSelf viewForIconWithName:@"table_ic_hourglass"];
             [topView addSubview:iconView];
             [iconView autoVCenterInSuperview];
-            [iconView autoPinLeadingToSuperView];
+            [iconView autoPinLeadingToSuperview];
 
             UILabel *rowLabel = [UILabel new];
             rowLabel.text = NSLocalizedString(@"DISAPPEARING_MESSAGES", @"table cell label in conversation settings");
@@ -364,7 +365,7 @@ NS_ASSUME_NONNULL_BEGIN
             [topView addSubview:switchView];
             [switchView autoVCenterInSuperview];
             [switchView autoPinLeadingToTrailingOfView:rowLabel margin:weakSelf.iconSpacing];
-            [switchView autoPinTrailingToSuperView];
+            [switchView autoPinTrailingToSuperview];
 
             UILabel *subtitleLabel = [UILabel new];
             subtitleLabel.text
@@ -376,7 +377,7 @@ NS_ASSUME_NONNULL_BEGIN
             [cell.contentView addSubview:subtitleLabel];
             [subtitleLabel autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:topView];
             [subtitleLabel autoPinEdge:ALEdgeLeading toEdge:ALEdgeLeading ofView:rowLabel];
-            [subtitleLabel autoPinTrailingToSuperView];
+            [subtitleLabel autoPinTrailingToSuperview];
 
             return cell;
         }
@@ -404,7 +405,7 @@ NS_ASSUME_NONNULL_BEGIN
                             UIImageView *iconView = [strongSelf viewForIconWithName:@"table_ic_hourglass"];
                             [topView addSubview:iconView];
                             [iconView autoVCenterInSuperview];
-                            [iconView autoPinLeadingToSuperView];
+                            [iconView autoPinLeadingToSuperview];
 
                             UILabel *rowLabel = strongSelf.disappearingMessagesDurationLabel;
                             [strongSelf updateDisappearingMessagesDurationLabel];
@@ -426,7 +427,7 @@ NS_ASSUME_NONNULL_BEGIN
                             [cell.contentView addSubview:slider];
                             [slider autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:topView];
                             [slider autoPinEdge:ALEdgeLeading toEdge:ALEdgeLeading ofView:rowLabel];
-                            [slider autoPinTrailingToSuperView];
+                            [slider autoPinTrailingToSuperview];
 
                             return cell;
                         }
@@ -486,7 +487,7 @@ NS_ASSUME_NONNULL_BEGIN
         UIImageView *iconView = [strongSelf viewForIconWithName:@"table_ic_mute_thread"];
         [cell.contentView addSubview:iconView];
         [iconView autoVCenterInSuperview];
-        [iconView autoPinLeadingToSuperView];
+        [iconView autoPinLeadingToSuperview];
 
         UILabel *rowLabel = [UILabel new];
         rowLabel.text = NSLocalizedString(
@@ -585,7 +586,7 @@ NS_ASSUME_NONNULL_BEGIN
     UIImageView *iconView = [self viewForIconWithName:iconName];
     [cell.contentView addSubview:iconView];
     [iconView autoVCenterInSuperview];
-    [iconView autoPinLeadingToSuperView];
+    [iconView autoPinLeadingToSuperview];
 
     UILabel *rowLabel = [UILabel new];
     rowLabel.text = name;
@@ -595,7 +596,7 @@ NS_ASSUME_NONNULL_BEGIN
     [cell.contentView addSubview:rowLabel];
     [rowLabel autoVCenterInSuperview];
     [rowLabel autoPinLeadingToTrailingOfView:iconView margin:self.iconSpacing];
-    [rowLabel autoPinTrailingToSuperView];
+    [rowLabel autoPinTrailingToSuperview];
 
     return cell;
 }
@@ -631,14 +632,14 @@ NS_ASSUME_NONNULL_BEGIN
     _avatarView = avatarView;
     [threadInfoView addSubview:avatarView];
     [avatarView autoVCenterInSuperview];
-    [avatarView autoPinLeadingToSuperView];
+    [avatarView autoPinLeadingToSuperview];
     [avatarView autoSetDimension:ALDimensionWidth toSize:kAvatarSize];
     [avatarView autoSetDimension:ALDimensionHeight toSize:kAvatarSize];
 
     UIView *threadNameView = [UIView containerView];
     [threadInfoView addSubview:threadNameView];
     [threadNameView autoVCenterInSuperview];
-    [threadNameView autoPinTrailingToSuperView];
+    [threadNameView autoPinTrailingToSuperview];
     [threadNameView autoPinLeadingToTrailingOfView:avatarView margin:16.f];
 
     UILabel *threadTitleLabel = [UILabel new];
@@ -662,7 +663,7 @@ NS_ASSUME_NONNULL_BEGIN
             subtitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
             [threadNameView addSubview:subtitleLabel];
             [subtitleLabel autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:lastTitleView];
-            [subtitleLabel autoPinLeadingToSuperView];
+            [subtitleLabel autoPinLeadingToSuperview];
             lastTitleView = subtitleLabel;
         };
 
@@ -821,11 +822,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)presentContactViewController
 {
     if (!self.contactsManager.supportsContactEditing) {
-        OWSFail(@"%@ Contact editing not supported", self.tag);
+        OWSFail(@"%@ Contact editing not supported", self.logTag);
         return;
     }
     if (![self.thread isKindOfClass:[TSContactThread class]]) {
-        OWSFail(@"%@ unexpected thread: %@ in %s", self.tag, self.thread, __PRETTY_FUNCTION__);
+        OWSFail(@"%@ unexpected thread: %@ in %s", self.logTag, self.thread, __PRETTY_FUNCTION__);
         return;
     }
 
@@ -839,7 +840,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     if (!self.contactsManager.supportsContactEditing) {
         // Should not expose UI that lets the user get here.
-        OWSFail(@"%@ Contact editing not supported.", self.tag);
+        OWSFail(@"%@ Contact editing not supported.", self.logTag);
         return;
     }
 
@@ -885,12 +886,12 @@ NS_ASSUME_NONNULL_BEGIN
     TSOutgoingMessage *message = [[TSOutgoingMessage alloc] initWithTimestamp:[NSDate ows_millisecondTimeStamp]
                                                                      inThread:gThread
                                                              groupMetaMessage:TSGroupMessageQuit];
-    [self.messageSender sendMessage:message
+    [self.messageSender enqueueMessage:message
         success:^{
-            DDLogInfo(@"%@ Successfully left group.", self.tag);
+            DDLogInfo(@"%@ Successfully left group.", self.logTag);
         }
         failure:^(NSError *error) {
-            DDLogWarn(@"%@ Failed to leave group with error: %@", self.tag, error);
+            DDLogWarn(@"%@ Failed to leave group with error: %@", self.logTag, error);
         }];
 
     NSMutableArray *newGroupMemberIds = [NSMutableArray arrayWithArray:gThread.groupModel.groupMemberIds];
@@ -915,8 +916,7 @@ NS_ASSUME_NONNULL_BEGIN
     OWSAssert(!self.isGroupThread);
 
     if (![sender isKindOfClass:[UISwitch class]]) {
-        DDLogError(@"%@ Unexpected sender for block user switch: %@", self.tag, sender);
-        OWSAssert(0);
+        OWSFail(@"%@ Unexpected sender for block user switch: %@", self.logTag, sender);
     }
     UISwitch *blockUserSwitch = (UISwitch *)sender;
 
@@ -1128,18 +1128,6 @@ NS_ASSUME_NONNULL_BEGIN
         [self.thread.contactIdentifier isEqualToString:recipientId]) {
         [self updateTableContents];
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

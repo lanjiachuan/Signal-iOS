@@ -3,7 +3,7 @@
 //
 
 #import "OWSOutgoingCallMessage.h"
-#import "NSDate+millisecondTimeStamp.h"
+#import "NSDate+OWS.h"
 #import "OWSCallAnswerMessage.h"
 #import "OWSCallBusyMessage.h"
 #import "OWSCallHangupMessage.h"
@@ -31,7 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
 
     return self;
 }
-
 
 - (instancetype)initWithThread:(TSThread *)thread offerMessage:(OWSCallOfferMessage *)offerMessage
 {
@@ -113,6 +112,13 @@ NS_ASSUME_NONNULL_BEGIN
     return NO;
 }
 
+- (BOOL)isSilent
+{
+    // Avoid "phantom messages" for "outgoing call messages".
+
+    return YES;
+}
+
 //
 ///**
 // * override thread accessor in superclass, since this model is never saved.
@@ -165,13 +171,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - TSYapDatabaseObject overrides
 
-- (void)saveWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
+- (BOOL)shouldBeSaved
 {
-    // override superclass with no-op.
-    //
-    // There's no need to save this message, since it's not displayed to the user.
-    //
-    // Should we find a need to save this in the future, we need to exclude any non-serializable properties.
+    return NO;
 }
 
 - (NSString *)debugDescription

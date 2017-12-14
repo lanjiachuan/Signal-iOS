@@ -5,6 +5,8 @@
 import Foundation
 import PromiseKit
 import WebRTC
+import SignalServiceKit
+import SignalMessaging
 
 // HACK - Seeing crazy SEGFAULTs on iOS9 when accessing these objc externs.
 // iOS10 seems unaffected. Reproducible for ~1 in 3 calls.
@@ -104,7 +106,6 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
     private var audioSender: RTCRtpSender?
     private var audioTrack: RTCAudioTrack?
     private var audioConstraints: RTCMediaConstraints
-    static private let sharedAudioSession = CallAudioSession()
 
     // Video
 
@@ -146,8 +147,6 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
 
         super.init()
 
-        // Configure audio session so we don't prompt user with Record permission until call is connected.
-        type(of: self).configureAudioSession()
         peerConnection = factory.peerConnection(with: configuration,
                                                 constraints: connectionConstraints,
                                                 delegate: self)
@@ -227,7 +226,7 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
                 return
             }
             guard let videoCaptureSession = self.videoCaptureSession else {
-                owsFail("\(self.TAG) videoCaptureSession was unexpectedly nil")
+                Logger.debug("\(self.TAG) videoCaptureSession was unexpectedly nil")
                 return
             }
 
@@ -362,7 +361,11 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
                 }
                 Logger.verbose("\(self.TAG) setting local session description: \(sessionDescription)")
                 self.peerConnection.setLocalDescription(sessionDescription.rtcSessionDescription,
-                                                        completionHandler: { _ in
+                                                        completionHandler: { error in
+                                                            guard error == nil else {
+                                                                reject(error!)
+                                                                return
+                                                            }
                                                             fulfill()
                 })
             }
@@ -390,7 +393,11 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
                 }
                 Logger.verbose("\(self.TAG) setting remote description: \(sessionDescription)")
                 self.peerConnection.setRemoteDescription(sessionDescription,
-                                                         completionHandler: { _ in
+                                                         completionHandler: { error in
+                                                            guard error == nil else {
+                                                                reject(error!)
+                                                                return
+                                                            }
                                                             fulfill()
                 })
             }
@@ -504,7 +511,15 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
 
     // MARK: - Data Channel
 
-    public func sendDataChannelMessage(data: Data, description: String, isCritical: Bool = false) {
+    // should only be accessed on PeerConnectionClient.signalingQueue
+    var pendingDataChannelMessages: [PendingDataChannelMessage] = []
+    struct PendingDataChannelMessage {
+        let data: Data
+        let description: String
+        let isCritical: Bool
+    }
+
+    public func sendDataChannelMessage(data: Data, description: String, isCritical: Bool) {
         AssertIsOnMainThread()
 
         PeerConnectionClient.signalingQueue.async {
@@ -514,7 +529,12 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
             }
 
             guard let dataChannel = self.dataChannel else {
-                Logger.error("\(self.TAG) in \(#function) ignoring sending \(data) for nil dataChannel: \(description)")
+                if isCritical {
+                    Logger.info("\(self.TAG) in \(#function) enqueuing critical data channel message for after we have a dataChannel: \(description)")
+                    self.pendingDataChannelMessages.append(PendingDataChannelMessage(data: data, description: description, isCritical: isCritical))
+                } else {
+                    Logger.error("\(self.TAG) in \(#function) ignoring sending \(data) for nil dataChannel: \(description)")
+                }
                 return
             }
 
@@ -700,21 +720,17 @@ class PeerConnectionClient: NSObject, RTCPeerConnectionDelegate, RTCDataChannelD
             assert(self.dataChannel == nil)
             self.dataChannel = dataChannel
             dataChannel.delegate = self
+
+            let pendingMessages = self.pendingDataChannelMessages
+            self.pendingDataChannelMessages = []
+            DispatchQueue.main.async { [weak self] in
+                guard let strongSelf = self else { return }
+
+                pendingMessages.forEach { message in
+                    strongSelf.sendDataChannelMessage(data: message.data, description: message.description, isCritical: message.isCritical)
+                }
+            }
         }
-    }
-
-    // Mark: Audio Session
-
-    class func configureAudioSession() {
-        sharedAudioSession.configure()
-    }
-
-    class func startAudioSession() {
-        sharedAudioSession.start()
-    }
-
-    class func stopAudioSession() {
-        sharedAudioSession.stop()
     }
 
     // MARK: Helpers
@@ -778,12 +794,12 @@ class HardenedRTCSessionDescription {
 
         // Enforce Constant bit rate.
         let cbrRegex = try! NSRegularExpression(pattern:"(a=fmtp:111 ((?!cbr=).)*)\r?\n", options:.caseInsensitive)
-        description = cbrRegex.stringByReplacingMatches(in: description, options: [], range: NSMakeRange(0, description.characters.count), withTemplate: "$1;cbr=1\r\n")
+        description = cbrRegex.stringByReplacingMatches(in: description, options: [], range: NSMakeRange(0, description.count), withTemplate: "$1;cbr=1\r\n")
 
         // Strip plaintext audio-level details
         // https://tools.ietf.org/html/rfc6464
         let audioLevelRegex = try! NSRegularExpression(pattern:".+urn:ietf:params:rtp-hdrext:ssrc-audio-level.*\r?\n", options:.caseInsensitive)
-        description = audioLevelRegex.stringByReplacingMatches(in: description, options: [], range: NSMakeRange(0, description.characters.count), withTemplate: "")
+        description = audioLevelRegex.stringByReplacingMatches(in: description, options: [], range: NSMakeRange(0, description.count), withTemplate: "")
 
         return RTCSessionDescription.init(type: rtcSessionDescription.type, sdp: description)
     }

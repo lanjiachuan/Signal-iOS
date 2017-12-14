@@ -5,7 +5,6 @@
 #import "CodeVerificationViewController.h"
 #import "ProfileViewController.h"
 #import "Signal-Swift.h"
-#import "StringUtil.h"
 #import "UIViewController+OWS.h"
 #import <PromiseKit/AnyPromise.h>
 #import <SignalServiceKit/OWSError.h>
@@ -24,7 +23,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) UILabel *phoneNumberLabel;
 
 //// User action buttons
-@property (nonatomic) UIButton *challengeButton;
+@property (nonatomic) OWSFlatButton *submitButton;
 @property (nonatomic) UIButton *sendCodeViaSMSAgainButton;
 @property (nonatomic) UIButton *sendCodeViaVoiceButton;
 
@@ -45,7 +44,7 @@ NS_ASSUME_NONNULL_BEGIN
         return self;
     }
 
-    _accountManager = [Environment getCurrent].accountManager;
+    _accountManager = SignalApp.sharedApp.accountManager;
 
     return self;
 }
@@ -57,7 +56,7 @@ NS_ASSUME_NONNULL_BEGIN
         return self;
     }
 
-    _accountManager = [Environment getCurrent].accountManager;
+    _accountManager = SignalApp.sharedApp.accountManager;
 
     return self;
 }
@@ -115,7 +114,7 @@ NS_ASSUME_NONNULL_BEGIN
                           forState:UIControlStateNormal];
     backButton.titleLabel.font = [UIFont ows_mediumFontWithSize:14.f];
     [header addSubview:backButton];
-    [backButton autoPinLeadingToSuperViewWithMargin:10.f];
+    [backButton autoPinLeadingToSuperviewWithMargin:10.f];
     [backButton autoAlignAxis:ALAxisHorizontal toSameAxisOfView:titleLabel];
     [backButton addTarget:self action:@selector(backButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     
@@ -154,32 +153,33 @@ NS_ASSUME_NONNULL_BEGIN
                      withOffset:3];
     [underscoreView autoPinWidthToSuperviewWithMargin:kHMargin];
     [underscoreView autoSetDimension:ALDimensionHeight toSize:1.f];
-    
-    _challengeButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    _challengeButton.backgroundColor = signalBlueColor;
-    [_challengeButton setTitle:NSLocalizedString(@"VERIFICATION_CHALLENGE_SUBMIT_CODE", @"button text during registration to submit your SMS verification code")
-                     forState:UIControlStateNormal];
-    [_challengeButton setTitleColor:[UIColor whiteColor]
-                     forState:UIControlStateNormal];
-    _challengeButton.titleLabel.font = [UIFont ows_mediumFontWithSize:14.f];
-    [_challengeButton addTarget:self
-                         action:@selector(verifyChallengeAction:)
-               forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:_challengeButton];
-    [_challengeButton autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:underscoreView
-                      withOffset:15];
-    [_challengeButton autoPinWidthToSuperviewWithMargin:kHMargin];
-    [_challengeButton autoSetDimension:ALDimensionHeight toSize:47.f];
+
+    const CGFloat kSubmitButtonHeight = 47.f;
+    // NOTE: We use ows_signalBrandBlueColor instead of ows_materialBlueColor
+    //       throughout the onboarding flow to be consistent with the headers.
+    OWSFlatButton *submitButton =
+        [OWSFlatButton buttonWithTitle:NSLocalizedString(@"VERIFICATION_CHALLENGE_SUBMIT_CODE",
+                                           @"button text during registration to submit your SMS verification code.")
+                                  font:[OWSFlatButton fontForHeight:kSubmitButtonHeight]
+                            titleColor:[UIColor whiteColor]
+                       backgroundColor:[UIColor ows_signalBrandBlueColor]
+                                target:self
+                              selector:@selector(submitVerificationCode)];
+    self.submitButton = submitButton;
+    [self.view addSubview:_submitButton];
+    [_submitButton autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:underscoreView withOffset:15];
+    [_submitButton autoPinWidthToSuperviewWithMargin:kHMargin];
+    [_submitButton autoSetDimension:ALDimensionHeight toSize:kSubmitButtonHeight];
 
     const CGFloat kSpinnerSize = 20;
     const CGFloat kSpinnerSpacing = ScaleFromIPhone5To7Plus(5, 15);
 
     _submitCodeSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
-    [_challengeButton addSubview:_submitCodeSpinner];
+    [_submitButton addSubview:_submitCodeSpinner];
     [_submitCodeSpinner autoSetDimension:ALDimensionWidth toSize:kSpinnerSize];
     [_submitCodeSpinner autoSetDimension:ALDimensionHeight toSize:kSpinnerSize];
     [_submitCodeSpinner autoVCenterInSuperview];
-    [_submitCodeSpinner autoPinTrailingToSuperViewWithMargin:kSpinnerSpacing];
+    [_submitCodeSpinner autoPinTrailingToSuperviewWithMargin:kSpinnerSpacing];
 
     _sendCodeViaSMSAgainButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _sendCodeViaSMSAgainButton.backgroundColor = [UIColor whiteColor];
@@ -192,8 +192,7 @@ NS_ASSUME_NONNULL_BEGIN
                                    action:@selector(sendCodeViaSMSAction:)
                          forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:_sendCodeViaSMSAgainButton];
-    [_sendCodeViaSMSAgainButton autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:_challengeButton
-                                withOffset:10];
+    [_sendCodeViaSMSAgainButton autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:_submitButton withOffset:10];
     [_sendCodeViaSMSAgainButton autoPinWidthToSuperviewWithMargin:kHMargin];
     [_sendCodeViaSMSAgainButton autoSetDimension:ALDimensionHeight toSize:35];
     
@@ -202,7 +201,7 @@ NS_ASSUME_NONNULL_BEGIN
     [_requestCodeAgainSpinner autoSetDimension:ALDimensionWidth toSize:kSpinnerSize];
     [_requestCodeAgainSpinner autoSetDimension:ALDimensionHeight toSize:kSpinnerSize];
     [_requestCodeAgainSpinner autoVCenterInSuperview];
-    [_requestCodeAgainSpinner autoPinTrailingToSuperViewWithMargin:kSpinnerSpacing];
+    [_requestCodeAgainSpinner autoPinTrailingToSuperviewWithMargin:kSpinnerSpacing];
 
     _sendCodeViaVoiceButton = [UIButton buttonWithType:UIButtonTypeCustom];
     _sendCodeViaVoiceButton.backgroundColor = [UIColor whiteColor];
@@ -225,7 +224,7 @@ NS_ASSUME_NONNULL_BEGIN
     [_requestCallSpinner autoSetDimension:ALDimensionWidth toSize:kSpinnerSize];
     [_requestCallSpinner autoSetDimension:ALDimensionHeight toSize:kSpinnerSize];
     [_requestCallSpinner autoVCenterInSuperview];
-    [_requestCallSpinner autoPinTrailingToSuperViewWithMargin:kSpinnerSpacing];
+    [_requestCallSpinner autoPinTrailingToSuperviewWithMargin:kSpinnerSpacing];
 }
 
 - (NSString *)phoneNumberText
@@ -255,7 +254,7 @@ NS_ASSUME_NONNULL_BEGIN
     [self.submitCodeSpinner stopAnimating];
 }
 
-- (void)verifyChallengeAction:(nullable id)sender
+- (void)submitVerificationCode
 {
     [self startActivityIndicator];
     OWSProdInfo([OWSAnalyticsEvents registrationRegisteringCode]);
@@ -264,7 +263,7 @@ NS_ASSUME_NONNULL_BEGIN
         .then(^{
             OWSProdInfo([OWSAnalyticsEvents registrationRegisteringSubmittedCode]);
 
-            DDLogInfo(@"%@ Successfully registered Signal account.", weakSelf.tag);
+            DDLogInfo(@"%@ Successfully registered Signal account.", weakSelf.logTag);
             dispatch_async(dispatch_get_main_queue(), ^{
                 [weakSelf stopActivityIndicator];
                 [weakSelf vericationWasCompleted];
@@ -272,7 +271,7 @@ NS_ASSUME_NONNULL_BEGIN
         })
         .catch(^(NSError *_Nonnull error) {
             OWSProdInfo([OWSAnalyticsEvents registrationRegistrationFailed]);
-            DDLogError(@"%@ error verifying challenge: %@", weakSelf.tag, error);
+            DDLogError(@"%@ error verifying challenge: %@", weakSelf.logTag, error);
             dispatch_async(dispatch_get_main_queue(), ^{
                 [weakSelf stopActivityIndicator];
                 [weakSelf presentAlertWithVerificationError:error];
@@ -327,12 +326,12 @@ NS_ASSUME_NONNULL_BEGIN
     [_requestCodeAgainSpinner startAnimating];
     __weak CodeVerificationViewController *weakSelf = self;
     [TSAccountManager rerequestSMSWithSuccess:^{
-        DDLogInfo(@"%@ Successfully requested SMS code", weakSelf.tag);
+        DDLogInfo(@"%@ Successfully requested SMS code", weakSelf.logTag);
         [weakSelf enableServerActions:YES];
         [weakSelf.requestCodeAgainSpinner stopAnimating];
     }
         failure:^(NSError *error) {
-            DDLogError(@"%@ Failed to request SMS code with error: %@", weakSelf.tag, error);
+            DDLogError(@"%@ Failed to request SMS code with error: %@", weakSelf.logTag, error);
             [weakSelf showRegistrationErrorMessage:error];
             [weakSelf enableServerActions:YES];
             [weakSelf.requestCodeAgainSpinner stopAnimating];
@@ -348,13 +347,13 @@ NS_ASSUME_NONNULL_BEGIN
     [_requestCallSpinner startAnimating];
     __weak CodeVerificationViewController *weakSelf = self;
     [TSAccountManager rerequestVoiceWithSuccess:^{
-        DDLogInfo(@"%@ Successfully requested voice code", weakSelf.tag);
+        DDLogInfo(@"%@ Successfully requested voice code", weakSelf.logTag);
 
         [weakSelf enableServerActions:YES];
         [weakSelf.requestCallSpinner stopAnimating];
     }
         failure:^(NSError *error) {
-            DDLogError(@"%@ Failed to request voice code with error: %@", weakSelf.tag, error);
+            DDLogError(@"%@ Failed to request voice code with error: %@", weakSelf.logTag, error);
             [weakSelf showRegistrationErrorMessage:error];
             [weakSelf enableServerActions:YES];
             [weakSelf.requestCallSpinner stopAnimating];
@@ -368,7 +367,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)enableServerActions:(BOOL)enabled {
-    [_challengeButton setEnabled:enabled];
+    [_submitButton setEnabled:enabled];
     [_sendCodeViaSMSAgainButton setEnabled:enabled];
     [_sendCodeViaVoiceButton setEnabled:enabled];
 }
@@ -452,7 +451,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    [self verifyChallengeAction:nil];
+    [self submitVerificationCode];
     [textField resignFirstResponder];
     return NO;
 }
@@ -469,19 +468,7 @@ NS_ASSUME_NONNULL_BEGIN
     UITextPosition *newPosition = [self.challengeTextField endOfDocument];
     self.challengeTextField.selectedTextRange = [self.challengeTextField textRangeFromPosition:newPosition
                                                                                     toPosition:newPosition];
-    [self verifyChallengeAction:nil];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
+    [self submitVerificationCode];
 }
 
 @end

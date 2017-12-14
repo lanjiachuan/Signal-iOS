@@ -59,6 +59,8 @@ NS_ASSUME_NONNULL_BEGIN
              @"+20": @"google.com.eg",
              // Oman
              @"+968": @"google.com.om",
+             // Qatar
+             @"+974": @"google.com.qa",
              // UAE
              @"+971": @"google.ae",
              };
@@ -72,18 +74,6 @@ NS_ASSUME_NONNULL_BEGIN
         }
     }
     return NO;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

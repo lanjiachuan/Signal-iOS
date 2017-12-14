@@ -2,7 +2,6 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
 #import "TSAccountManager.h"
 
 typedef NS_ENUM(NSInteger, RefreshPreKeysMode) {
@@ -23,7 +22,7 @@ typedef NS_ENUM(NSInteger, RefreshPreKeysMode) {
 + (BOOL)isAppLockedDueToPreKeyUpdateFailures;
 
 + (void)registerPreKeysWithMode:(RefreshPreKeysMode)mode
-                        success:(void (^)())successHandler
+                        success:(void (^)(void))successHandler
                         failure:(void (^)(NSError *error))failureHandler;
 
 + (void)checkPreKeys;

@@ -3,7 +3,7 @@
 //
 
 #import "OWSSyncGroupsRequestMessage.h"
-#import "NSDate+millisecondTimeStamp.h"
+#import "NSDate+OWS.h"
 #import "OWSSignalServiceProtos.pb.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -31,16 +31,21 @@ NS_ASSUME_NONNULL_BEGIN
     return self;
 }
 
-- (void)saveWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
+- (BOOL)shouldBeSaved
 {
-    // override superclass with no-op.
-    //
-    // There's no need to save this message, since it's not displayed to the user.
+    return NO;
 }
 
 - (BOOL)shouldSyncTranscript
 {
     return NO;
+}
+
+- (BOOL)isSilent
+{
+    // Avoid "phantom messages"
+
+    return YES;
 }
 
 - (OWSSignalServiceProtosDataMessageBuilder *)dataMessageBuilder

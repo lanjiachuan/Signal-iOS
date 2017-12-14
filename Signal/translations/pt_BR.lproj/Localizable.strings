@@ -37,15 +37,6 @@
 /* The label for the 'save' button in action sheets. */
 "ALERT_SAVE" = "Salvar";
 
-/* A message for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_MESSAGE" = "Verificando se esta é uma conta Signal válida.";
-
-/* A title for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_TITLE" = "Validando";
-
-/* registration button text */
-"ALREADY_HAVE_ACCOUNT_BUTTON" = "Já tem uma conta Signal?";
-
 /* No comment provided by engineer. */
 "ANSWER_CALL_BUTTON_TITLE" = "Atender";
 
@@ -62,7 +53,7 @@
 "APN_MESSAGE_IN_GROUP_DETAILED" = "%@ no grupo %@: %@";
 
 /* Text prompting user to edit their profile name. */
-"APP_SETTINGS_EDIT_PROFILE_NAME_PROMPT" = "Enter your name";
+"APP_SETTINGS_EDIT_PROFILE_NAME_PROMPT" = "Informe seu nome";
 
 /* Message format for the 'new app version available' alert. Embeds: {{The latest app version number.}}. */
 "APP_UPDATE_NAG_ALERT_MESSAGE_FORMAT" = "A versão %@ está disponível na App Store.";
@@ -86,7 +77,7 @@
 "ATTACHMENT" = "Anexo";
 
 /* Title for the 'attachment approval' dialog. */
-"ATTACHMENT_APPROVAL_DIALOG_TITLE" = "Anexo";
+"ATTACHMENT_APPROVAL_DIALOG_TITLE" = "Attachment";
 
 /* Format string for file extension label in call interstitial view */
 "ATTACHMENT_APPROVAL_FILE_EXTENSION_FORMAT" = "Tipo de arquivo: %@";
@@ -95,7 +86,7 @@
 "ATTACHMENT_APPROVAL_FILE_SIZE_FORMAT" = "Tamanho: %@";
 
 /* Label for 'send' button in the 'attachment approval' dialog. */
-"ATTACHMENT_APPROVAL_SEND_BUTTON" = "Enviar";
+"ATTACHMENT_APPROVAL_SEND_BUTTON" = "Send";
 
 /* Generic filename for an attachment with no known name */
 "ATTACHMENT_DEFAULT_FILENAME" = "Anexo";
@@ -206,7 +197,7 @@
 "BLOCK_OFFER_ACTIONSHEET_TITLE_FORMAT" = "Bloquear %@?";
 
 /* Label for generic done button. */
-"BUTTON_DONE" = "Done";
+"BUTTON_DONE" = "Pronto";
 
 /* Alert message when calling and permissions for microphone are missing */
 "CALL_AUDIO_PERMISSION_MESSAGE" = "O Signal necessita de acesso ao seu microfone para fazer chamadas e gravar mensagens de voz. Você pode conseguir esta permissão no app Configurações.";
@@ -216,6 +207,9 @@
 
 /* Accessibilty label for placing call button */
 "CALL_LABEL" = "Chamar";
+
+/* Text shown on call screen in place of remote video */
+"CALL_REMOTE_VIDEO_DISABLED" = "Por favor, atualize para iOS 9 ou superior para ver o vídeo remoto.";
 
 /* Call setup status label after outgoing call times out */
 "CALL_SCREEN_STATUS_NO_ANSWER" = "Não atendida.";
@@ -232,6 +226,21 @@
 /* Title for alert offering to call a user. */
 "CALL_USER_ALERT_TITLE" = "Chamar?";
 
+/* Accessibility label for accepting incoming calls */
+"CALL_VIEW_ACCEPT_INCOMING_CALL_LABEL" = "Receber chamada";
+
+/* Accessibility label for selection the audio source */
+"CALL_VIEW_AUDIO_SOURCE_LABEL" = "Áudio";
+
+/* Accessibility label for declining incoming calls */
+"CALL_VIEW_DECLINE_INCOMING_CALL_LABEL" = "Recusar chamada";
+
+/* Accessibility label for hang up call */
+"CALL_VIEW_HANGUP_LABEL" = "Terminar chamada";
+
+/* Accessibility label for muting the microphone */
+"CALL_VIEW_MUTE_LABEL" = "Mudo";
+
 /* Reminder to the user of the benefits of enabling CallKit and disabling CallKit privacy. */
 "CALL_VIEW_SETTINGS_NAG_DESCRIPTION_ALL" = "Você pode atender chamadas diretamente da sua tela bloqueada e ver o nome e o número de telefone de chamadas recebidas se você mudar suas configurações.\n\nPara detalhes, veja as configurações de privacidade.";
 
@@ -241,8 +250,14 @@
 /* Label for button that dismiss the call view's settings nag. */
 "CALL_VIEW_SETTINGS_NAG_NOT_NOW_BUTTON" = "Agora não";
 
-/* Label for button that shows the privacy settings */
+/* Label for button that shows the privacy settings. */
 "CALL_VIEW_SETTINGS_NAG_SHOW_CALL_SETTINGS" = "Mostrar Configurações de Privacidade";
+
+/* Accessibility label to switch to audio only */
+"CALL_VIEW_SWITCH_TO_AUDIO_LABEL" = "Mudar para chamada em áudio";
+
+/* Accessibility label to switch to video call */
+"CALL_VIEW_SWITCH_TO_VIDEO_LABEL" = "Mudar para chamada de vídeo";
 
 /* notification action */
 "CALLBACK_BUTTON_TITLE" = "Retornar a chamada";
@@ -261,6 +276,15 @@
 
 /* Activity Sheet label */
 "COMPARE_SAFETY_NUMBER_ACTION" = "Comparar com Área de Transferência";
+
+/* Table section header for contact listing when composing a new message */
+"COMPOSE_MESSAGE_CONTACT_SECTION_TITLE" = "Contatos";
+
+/* Table section header for group listing when composing a new message */
+"COMPOSE_MESSAGE_GROUP_SECTION_TITLE" = "Grupos";
+
+/* Table section header for invite listing when composing a new message */
+"COMPOSE_MESSAGE_INVITE_SECTION_TITLE" = "Convide";
 
 /* Multiline label explaining why compose-screen contact picker is empty. */
 "COMPOSE_SCREEN_MISSING_CONTACTS_PERMISSION" = "Para verificar quais dos seus contatos são usuários do Signal,  permita acesso aos contatos nas Configurações de Sistema.";
@@ -368,16 +392,22 @@
 "CONVERSATION_SETTINGS_VIEW_SHARE_PROFILE_WITH_USER" = "Compartilhar o Seu Perfil";
 
 /* Message shown in conversation view that offers to add an unknown user to your phone's contacts. */
-"CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER" = "Add to Contacts";
+"CONVERSATION_VIEW_ADD_TO_CONTACTS_OFFER" = "Adicionar aos Contatos";
 
 /* Message shown in conversation view that offers to share your profile with a user. */
-"CONVERSATION_VIEW_ADD_USER_TO_PROFILE_WHITELIST_OFFER" = "Share Your Profile With This User";
+"CONVERSATION_VIEW_ADD_USER_TO_PROFILE_WHITELIST_OFFER" = "Compartilhar seu Perfil com este usuário";
 
 /* Title for the group of buttons show for unknown contacts offering to add them to contacts, etc. */
-"CONVERSATION_VIEW_CONTACTS_OFFER_TITLE" = "This user is not in your contacts.";
+"CONVERSATION_VIEW_CONTACTS_OFFER_TITLE" = "Este usuário não se encontra em seus contatos.";
+
+/* Indicates that the app is loading more messages in this conversation. */
+"CONVERSATION_VIEW_LOADING_MORE_MESSAGES" = "Carrengando Mais Mensagens...";
+
+/* Indicator on truncated text messages that they can be tapped to see the entire text message. */
+"CONVERSATION_VIEW_OVERSIZE_TEXT_TAP_FOR_MORE" = "Toque Para Ver o Texto Todo";
 
 /* Message shown in conversation view that offers to block an unknown user. */
-"CONVERSATION_VIEW_UNKNOWN_CONTACT_BLOCK_OFFER" = "Block This User";
+"CONVERSATION_VIEW_UNKNOWN_CONTACT_BLOCK_OFFER" = "Bloquear este usuário";
 
 /* ActionSheet title */
 "CORRUPTED_SESSION_DESCRIPTION" = "Restabelecer sua sessão lhe permitirá receber mensagens futuras de %@, mas não recuperará qualquer mensagem que já esteja corrompida.";
@@ -389,13 +419,43 @@
 "CREATE_NEW_GROUP" = "Criar novo grupo";
 
 /* Title for the 'crop/scale image' dialog. */
-"CROP_SCALE_IMAGE_VIEW_TITLE" = "Move and Scale";
+"CROP_SCALE_IMAGE_VIEW_TITLE" = "Mover e Redimensionar";
 
 /* Subtitle shown while the app is updating its database. */
 "DATABASE_VIEW_OVERLAY_SUBTITLE" = "Isso pode levar alguns minutos.";
 
 /* Title shown while the app is updating its database. */
 "DATABASE_VIEW_OVERLAY_TITLE" = "Atualizando banco de dados";
+
+/* Message indicating that the debug log is being uploaded. */
+"DEBUG_LOG_ACTIVITY_INDICATOR" = "Sending Debug Log...";
+
+/* Message of the debug log alert. */
+"DEBUG_LOG_ALERT_MESSAGE" = "What would you like to do with the link to your debug log?";
+
+/* Label for the 'Open a Bug Report' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_BUG_REPORT" = "Open a Bug Report";
+
+/* Label for the 'copy link' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_COPY_LINK" = "Copy Link";
+
+/* Label for the 'email debug log' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_EMAIL" = "Email Support";
+
+/* Label for the 'send to self' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_SEND_TO_SELF" = "Send to Self";
+
+/* Title of the debug log alert. */
+"DEBUG_LOG_ALERT_TITLE" = "One More Step";
+
+/* Title of the alert indicating the debug log upload failed. */
+"DEBUG_LOG_FAILURE_ALERT_TITLE" = "Failed to Submit Debug Log";
+
+/* Message of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_MESSAGE" = "The gist link was copied in your clipboard. You are about to be redirected to the GitHub issue list.";
+
+/* Title of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_TITLE" = "GitHub Redirection";
 
 /* {{Short Date}} when device last communicated with Signal Server. */
 "DEVICE_LAST_ACTIVE_AT_LABEL" = "Última atividade: %@";
@@ -460,6 +520,12 @@
 /* Short name for edit menu item to copy contents of media message. */
 "EDIT_ITEM_COPY_ACTION" = "Copiar";
 
+/* Short name for edit menu item to delete contents of media message. */
+"EDIT_ITEM_DELETE_ACTION" = "Apagar";
+
+/* Short name for edit menu item to show message metadata. */
+"EDIT_ITEM_MESSAGE_METADATA_ACTION" = "Info";
+
 /* Short name for edit menu item to save contents of media message. */
 "EDIT_ITEM_SAVE_ACTION" = "Salvar";
 
@@ -520,6 +586,9 @@
 /* Error mesage indicating that message send failed due to block list */
 "ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_BLOCK_LIST" = "Mensagem não enviada pois o usuário está bloqueado.";
 
+/* Error mesage indicating that message send failed due to failed attachment write */
+"ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_FAILED_ATTACHMENT_WRITE" = "Falha ao gravar anexo.";
+
 /* Generic error used whenver Signal can't contact the server */
 "ERROR_DESCRIPTION_NO_INTERNET" = "O Signal não pôde se conectar à Internet. Tente outra rede Wi-Fi ou utilize dados móveis.";
 
@@ -537,6 +606,9 @@
 
 /* Error message when attempting to send message */
 "ERROR_DESCRIPTION_UNREGISTERED_RECIPIENT" = "O contato não é usuário do Signal.";
+
+/* Error message when unable to receive an attachment because the sending client is too old. */
+"ERROR_MESSAGE_ATTACHMENT_FROM_OLD_CLIENT" = "Falha: Peça ao remetente para atualizar o Signal e reenviar.";
 
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_DUPLICATE_MESSAGE" = "Recebi uma mensagem duplicada.";
@@ -564,12 +636,6 @@
 
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_WRONG_TRUSTED_IDENTITY_KEY" = "Número de segurança mudou. Toque para verificar.";
-
-/* during registration */
-"EXISTING_USER_REGISTRATION_ALERT_BODY" = "Por enquanto o Signal somente pode estar ativo em um dispositivo móvel por número de telefone.";
-
-/* during registration, embeds {{device type}}, e.g. \"iPhone\" or \"iPad\" */
-"EXISTING_USER_REGISTRATION_ALERT_TITLE" = "Ativar este %@ desabilitará o Signal em qualquer outro dispositivo atualmente associado a este número de telefone.";
 
 /* Message for the alert indicating the 'export with signal' file had an invalid filename. */
 "EXPORT_WITH_SIGNAL_ERROR_MESSAGE_INVALID_FILENAME" = "Nome de arquivo inválido.";
@@ -610,14 +676,35 @@
 /* A label for generic attachments. */
 "GENERIC_ATTACHMENT_LABEL" = "Anexo";
 
+/* Error displayed when there is a failure fetching gifs from the remote service. */
+"GIF_PICKER_ERROR_FETCH_FAILURE" = "Falha ao baixar o GIF requisitado. Por favor, verifique se você está online.";
+
+/* Generic error displayed when picking a gif */
+"GIF_PICKER_ERROR_GENERIC" = "Erro desconhecido.";
+
+/* Shown when selected gif couldn't be fetched */
+"GIF_PICKER_FAILURE_ALERT_TITLE" = "Impossível Escolher GIF";
+
+/* Alert message shown when user tries to search for GIFs without entering any search terms. */
+"GIF_PICKER_VIEW_MISSING_QUERY" = "Por favor, insira a sua busca.";
+
+/* Title for the 'gif picker' dialog. */
+"GIF_PICKER_VIEW_TITLE" = "Procurar GIF";
+
+/* Indicates that an error occured while searching. */
+"GIF_VIEW_SEARCH_ERROR" = "Falha. Toque para tentar novamente.";
+
+/* Indicates that the user's search had no results. */
+"GIF_VIEW_SEARCH_NO_RESULTS" = "Nenhum Resultado.";
+
+/* Placeholder text for the search field in gif view */
+"GIF_VIEW_SEARCH_PLACEHOLDER_TEXT" = "Insira a sua pesquisa";
+
 /* No comment provided by engineer. */
 "GROUP_AVATAR_CHANGED" = "Avatar trocado.";
 
 /* No comment provided by engineer. */
 "GROUP_CREATED" = "Grupo criado.";
-
-/* No comment provided by engineer. */
-"GROUP_CREATING" = "Criando um novo grupo";
 
 /* Message shown in conversation view that indicates there were issues with group creation. */
 "GROUP_CREATION_FAILED" = "Não foi possível adicional todos os membros ao grupo. Toque para tentar de novo. ";
@@ -752,10 +839,10 @@
 "LINK_DEVICE_RESTART" = "Tente novamente";
 
 /* QR Scanning screen instructions, placed alongside a camera view for scanning QRCodes */
-"LINK_DEVICE_SCANNING_INSTRUCTIONS" = "Escanei o QR code exibido no dispositivo para cnectar";
+"LINK_DEVICE_SCANNING_INSTRUCTIONS" = "Digitalize o código QR exibido no dispositivo para conectar.";
 
 /* Subheading for 'Link New Device' navigation */
-"LINK_NEW_DEVICE_SUBTITLE" = "Escanear QR Code";
+"LINK_NEW_DEVICE_SUBTITLE" = "Digitalizar o código QR";
 
 /* Navigation title when scanning QR code to add new device. */
 "LINK_NEW_DEVICE_TITLE" = "Conectar Novo Dispositivo";
@@ -772,9 +859,6 @@
 /* No comment provided by engineer. */
 "LOGGING_SECTION" = "Registros";
 
-/* No comment provided by engineer. */
-"ME_STRING" = "Eu";
-
 /* media picker option to take photo or video */
 "MEDIA_FROM_CAMERA_BUTTON" = "Câmera";
 
@@ -787,11 +871,65 @@
 /* No comment provided by engineer. */
 "MESSAGE_COMPOSEVIEW_TITLE" = "Nova Mensagem";
 
-/* message footer for delivered messages */
+/* Label for file size of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_FILE_SIZE" = "Tamanho de Arquivo";
+
+/* Label for the MIME type of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MIME_TYPE" = "Tipo MME";
+
+/* Label for 'missing' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MISSING_FILE" = "Falta Anexo";
+
+/* Label for 'not yet downloaded' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_NOT_YET_DOWNLOADED" = "Ainda não baixado";
+
+/* Status label for messages which are delivered. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_DELIVERED" = "Recebida";
+
+/* Status label for messages which are failed. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_FAILED" = "Erro";
+
+/* Status label for messages which are read. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_READ" = "Lida";
+
+/* Status label for messages which are sending. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENDING" = "Enviando";
+
+/* Status label for messages which are sent. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENT" = "Enviado";
+
+/* Status label for messages which are uploading. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_UPLOADING" = "Enviando";
+
+/* Label for messages without a body or attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_NO_ATTACHMENT_OR_BODY" = "Mensagem não possui conteúdo ou anexo.";
+
+/* Label for the 'received date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_RECEIVED_DATE_TIME" = "Recebido";
+
+/* Label for the 'sender' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENDER" = "Remetente";
+
+/* Label for the 'sent date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENT_DATE_TIME" = "Enviado";
+
+/* Label for the original filename of any attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SOURCE_FILENAME" = "Nome do Arquivo";
+
+/* Title for the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_TITLE" = "Mensagem";
+
+/* message status for message delivered to their recipient. */
 "MESSAGE_STATUS_DELIVERED" = "Recebido";
 
 /* message footer for failed messages */
 "MESSAGE_STATUS_FAILED" = "Falha no envio. Toque para mais informações .";
+
+/* message footer for read messages */
+"MESSAGE_STATUS_READ" = "Lida";
+
+/* message status while message is sending. */
+"MESSAGE_STATUS_SENDING" = "Enviando...";
 
 /* message footer for sent messages */
 "MESSAGE_STATUS_SENT" = "Enviado";
@@ -821,7 +959,7 @@
 "MESSAGES_VIEW_GROUP_N_MEMBERS_BLOCKED_FORMAT" = "Você Bloqueou %@ Membros deste Grupo";
 
 /* Text for banner in group conversation view that offers to share your profile with this group. */
-"MESSAGES_VIEW_GROUP_PROFILE_WHITELIST_BANNER" = "Share Your Profile With This Group?";
+"MESSAGES_VIEW_GROUP_PROFILE_WHITELIST_BANNER" = "Você Deseja Compartilhar o Seu Perfil com Esse Grupo?";
 
 /* Indicates that more than one member of this group conversation is no longer verified. */
 "MESSAGES_VIEW_N_MEMBERS_NO_LONGER_VERIFIED" = "Ao menos um membro deste grupo não está mais marcado como verificado. Toque para ver as opções.";
@@ -855,23 +993,8 @@
    Alert title when camera is not authorized */
 "MISSING_CAMERA_PERMISSION_TITLE" = "O Signal precisa acessar sua câmera.";
 
-/* No comment provided by engineer. */
-"MSGVIEW_MISSED_CALL_BECAUSE_OF_CHANGED_IDENTITY" = "Chamada perdida porque o número de segurança dessa pessoa mudou.";
-
 /* notification title. Embeds {{caller's name or phone number}} */
 "MSGVIEW_MISSED_CALL_WITH_NAME" = "Chamada perdida de %@";
-
-/* No comment provided by engineer. */
-"MSGVIEW_RECEIVED_CALL" = "Você recebeu uma chamada de %@.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_THEY_TRIED_TO_CALL_YOU" = "%@ tentou telefonar para você.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_CALLED" = "Você ligou para %@.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_TRIED_TO_CALL" = "Você tentou telefonar para %@.";
 
 /* No comment provided by engineer. */
 "MULTIDEVICE_PAIRING_MAX_DESC" = "Você não pode emparelhar mais nenhum dispositivo.";
@@ -883,7 +1006,7 @@
 "MUTE_BEHAVIOR_EXPLANATION" = "Você não receberá notificações para conversas silenciadas.";
 
 /* A button to skip a view. */
-"NAVIGATION_ITEM_SKIP_BUTTON" = "Skip";
+"NAVIGATION_ITEM_SKIP_BUTTON" = "Pular";
 
 /* No comment provided by engineer. */
 "NETWORK_ERROR_RECOVERY" = "Por favor, verifique se você está online e tente de novo.";
@@ -915,7 +1038,7 @@
 /* The title for the 'create group' button. */
 "NEW_GROUP_CREATE_BUTTON" = "Criar";
 
-/* The navbar title for the 'new group' view. */
+/* Used in place of the group name when a group has not yet been named. */
 "NEW_GROUP_DEFAULT_TITLE" = "Novo grupo";
 
 /* An indicator that a user is a member of the new group. */
@@ -932,6 +1055,9 @@
 
 /* The alert title if user tries to exit the new group view without saving changes. */
 "NEW_GROUP_VIEW_UNSAVED_CHANGES_TITLE" = "Mudanças não salvas";
+
+/* No comment provided by engineer. */
+"new_message" = "Nova Mensagem";
 
 /* A label for the 'add by phone number' button in the 'new non-contact conversation' view */
 "NEW_NONCONTACT_CONVERSATION_VIEW_BUTTON" = "Buscar";
@@ -980,7 +1106,7 @@
 "OTHER_DISABLED_DISAPPEARING_MESSAGES_CONFIGURATION" = "%@ desabilitou mensagens efêmeras.";
 
 /* Info Message when {{other user}} updates message expiration to {{time amount}}, see the *_TIME_AMOUNT strings for context. */
-"OTHER_UPDATED_DISAPPEARING_MESSAGES_CONFIGURATION" = "%@ definiu a expiração da mensagen efêmera para %@.";
+"OTHER_UPDATED_DISAPPEARING_MESSAGES_CONFIGURATION" = "%@ definiu a expiração da mensagem efêmera para %@.";
 
 /* No comment provided by engineer. */
 "OUTGOING_CALL" = "Chamada efetuada";
@@ -989,10 +1115,7 @@
 "OUTGOING_INCOMPLETE_CALL" = "Chamadas realizadas não respondidas";
 
 /* A display format for oversize text messages. */
-"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@… [Toque para mais]";
-
-/* The title of the 'oversize text message' view. */
-"OVERSIZE_TEXT_MESSAGE_VIEW_TITLE" = "Mensagem";
+"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@…";
 
 /* A format for a label showing an example phone number. Embeds {{the example phone number}}. */
 "PHONE_NUMBER_EXAMPLE_FORMAT" = "Exemplo: %@";
@@ -1070,7 +1193,7 @@
 "PRIVACY_VERIFICATION_FAILED_WITH_OLD_REMOTE_VERSION" = "Seu contato está usando uma versão antiga do Signal. Ele precisa atualizá-lo antes de verificar.";
 
 /* alert body */
-"PRIVACY_VERIFICATION_FAILURE_INVALID_QRCODE" = "O código escaneado não parece ser um código de número de segurança. Vocês estão ambos com uma versão atualizada do Signal?";
+"PRIVACY_VERIFICATION_FAILURE_INVALID_QRCODE" = "O código digitalizado não parece ser um código de número de segurança. Vocês estão ambos com uma versão atualizada do Signal?";
 
 /* Paragraph(s) shown alongside the safety number when verifying privacy with {{contact name}} */
 "PRIVACY_VERIFICATION_INSTRUCTIONS" = "Se você deseja verificar a segurança da sua criptografia ponta-a-ponta com %@, compare os números acima com os números no dispositivo deles.\n\nOu então você pode escanear o código no telefone deles, ou ainda pedir a eles que escaneiem seu código.";
@@ -1097,31 +1220,31 @@
 "PROFILE_VIEW_CLEAR_AVATAR" = "Apagar Avatar";
 
 /* Error message shown when user tries to update profile with a profile name that is too long. */
-"PROFILE_VIEW_ERROR_PROFILE_NAME_TOO_LONG" = "Your profile name is too long.";
+"PROFILE_VIEW_ERROR_PROFILE_NAME_TOO_LONG" = "O nome do seu perfil é demasiado longo.";
 
 /* Error message shown when a profile update fails. */
 "PROFILE_VIEW_ERROR_UPDATE_FAILED" = "A atualização do perfil falhou.";
 
 /* Default text for the profile name field of the profile view. */
-"PROFILE_VIEW_NAME_DEFAULT_TEXT" = "Enter your name";
+"PROFILE_VIEW_NAME_DEFAULT_TEXT" = "Informe seu nome";
 
 /* Label for the profile avatar field of the profile view. */
 "PROFILE_VIEW_PROFILE_AVATAR_FIELD" = "Avatar";
 
 /* Description of the user profile. */
-"PROFILE_VIEW_PROFILE_DESCRIPTION" = "Your Signal Profile will be visible to your contacts, when you initiate new conversations, and when you share it with other users and groups.";
+"PROFILE_VIEW_PROFILE_DESCRIPTION" = "O seu Perfil no Signal será visível aos seus contatos quando você iniciar conversas e quando você compartilhá-la com outros membros do grupo.";
 
 /* Link to more information about the user profile. */
-"PROFILE_VIEW_PROFILE_DESCRIPTION_LINK" = "Tap here to learn more.";
+"PROFILE_VIEW_PROFILE_DESCRIPTION_LINK" = "Toque aqui para saber mais.";
 
 /* Label for the profile name field of the profile view. */
-"PROFILE_VIEW_PROFILE_NAME_FIELD" = "Profile Name";
+"PROFILE_VIEW_PROFILE_NAME_FIELD" = "Nome do Perfil";
 
 /* Button to save the profile view in the profile view. */
-"PROFILE_VIEW_SAVE_BUTTON" = "Save";
+"PROFILE_VIEW_SAVE_BUTTON" = "Salvar";
 
 /* Alert title that indicates the user's profile view is being saved. */
-"PROFILE_VIEW_SAVING" = "Saving...";
+"PROFILE_VIEW_SAVING" = "Salvando...";
 
 /* Title for the profile view. */
 "PROFILE_VIEW_TITLE" = "Perfil";
@@ -1149,12 +1272,6 @@
 
 /* No comment provided by engineer. */
 "RATING_TITLE" = "Apoie o Signal!";
-
-/* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_MESSAGE" = "Por favor, forneça um código de país válido";
-
-/* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_TITLE" = "Erro no Código de País";
 
 /* No comment provided by engineer. */
 "REGISTER_CONTACTS_WELCOME" = "Boas-vindas!";
@@ -1252,10 +1369,19 @@
 /* No comment provided by engineer. */
 "SECURE_SESSION_RESET" = "A sessão segura foi reiniciada.";
 
+/* Label for 'select gif to attach' action sheet button */
+"SELECT_GIF_BUTTON" = "GIF";
+
+/* Table section header for conversations you haven't recently used. */
+"SELECT_THREAD_TABLE_OTHER_CHATS_TITLE" = "Other Contacts";
+
+/* Table section header for recently active conversations */
+"SELECT_THREAD_TABLE_RECENT_CHATS_TITLE" = "Recent Chats";
+
 /* No comment provided by engineer. */
 "SEND_AGAIN_BUTTON" = "Enviar novamente";
 
-/* No comment provided by engineer. */
+/* Label for the send button in the conversation view. */
 "SEND_BUTTON_TITLE" = "Enviar";
 
 /* Header title for the 'send external file' view. */
@@ -1387,6 +1513,12 @@
 /* Settings table view cell label */
 "SETTINGS_PRIVACY_TITLE" = "Privacidade";
 
+/* Label for the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPT" = "Notificações de Leitura";
+
+/* An explanation of the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPTS_SECTION_FOOTER" = "Consultar e compartilhar quando as mensagens tiverem sido lidas. Essa configuração é opcional e válida para todas as conversas.";
+
 /* No comment provided by engineer. */
 "SETTINGS_SCREEN_SECURITY" = "Habilitar Segurança de Tela";
 
@@ -1417,6 +1549,24 @@
 /* action sheet item */
 "SHARE_ACTION_TWEET" = "Twitter";
 
+/* Indicates that the share extension is still loading. */
+"SHARE_EXTENSION_LOADING" = "Loading...";
+
+/* Message indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_MESSAGE" = "Launch the Signal app to register.";
+
+/* Title indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_TITLE" = "Not Registered";
+
+/* Message indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_MESSAGE" = "Launch the Signal app to update.";
+
+/* Title indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_TITLE" = "Not Ready";
+
+/* Shown when trying to share content to a Signal user for the share extension. Followed by failure details. */
+"SHARE_EXTENSION_UNABLE_TO_BUILD_ATTACHMENT_ALERT_TITLE" = "Unable to Prepare Attachment";
+
 /* Action sheet item */
 "SHOW_SAFETY_NUMBER_ACTION" = "Exibir Novo Número de Segurança ";
 
@@ -1442,7 +1592,7 @@
 "TIME_AMOUNT_MINUTES" = "%@ minutos";
 
 /* {{number of seconds}} embedded in strings, e.g. 'Alice updated disappearing messages expiration to {{5 seconds}}'. See other *_TIME_AMOUNT strings */
-"TIME_AMOUNT_SECONDS" = "%@ secundos";
+"TIME_AMOUNT_SECONDS" = "%@ segundos";
 
 /* {{1 day}} embedded in strings, e.g. 'Alice updated disappearing messages expiration to {{1 day}}'. See other *_TIME_AMOUNT strings */
 "TIME_AMOUNT_SINGLE_DAY" = "%@ dia";
@@ -1476,6 +1626,9 @@
 
 /* Displayed if for some reason we can't determine a contacts phone number *or* name */
 "UNKNOWN_CONTACT_NAME" = "Contato Desconhecido";
+
+/* Indicates an unknown or unrecognizable value. */
+"UNKNOWN_VALUE" = "Desconhecida/o";
 
 /* button title for unlinking a device */
 "UNLINK_ACTION" = "Desvincular";
@@ -1517,13 +1670,22 @@
 "UPGRADE_EXPERIENCE_CALLKIT_TITLE" = "Deslize para atender";
 
 /* button label shown one time, after user upgrades app */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_BUTTON" = "Set up Your Profile";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_BUTTON" = "Configurar o Seu Perfil";
 
 /* Description of new profile feature for upgrading (existing) users */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_DESCRIPTION" = "You can now share a profile photo and name with your friends on Signal.";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_DESCRIPTION" = "Agora você pode compartilhar uma foto e um nome de perfil com seus amigos no Signal.";
 
 /* Header for upgrade experience */
-"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_TITLE" = "Ready for Your Closeup?";
+"UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_TITLE" = "Pronto para sua foto?";
+
+/* Description of new profile feature for upgrading (existing) users */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_DESCRIPTION" = "Agora você pode optar por ler e compartilhar quando as mensagens tiverem sido lidas.";
+
+/* button label shown one time, after upgrade */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_PRIVACY_SETTINGS" = "Ativar notificações de leitura nas suas configurações de privacidade. ";
+
+/* Header for upgrade experience */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_TITLE" = "Introdução às Notificações de Leitura";
 
 /* Description of video calling to upgrading (existing) users */
 "UPGRADE_EXPERIENCE_VIDEO_DESCRIPTION" = "O Signal agora suporta chamadas seguras em vídeo. Apenas inicie uma chamada normalmente, toque no botão de câmera e acene.";
@@ -1552,8 +1714,8 @@
 /* button text during registration to request another SMS code be sent */
 "VERIFICATION_CHALLENGE_SUBMIT_AGAIN" = "Reenviar código via SMS";
 
-/* button text during registration to submit your SMS verification code */
-"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "Enviar Código De Verificação";
+/* button text during registration to submit your SMS verification code. */
+"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "Enviar";
 
 /* Label indicating the phone number currently being verified. */
 "VERIFICATION_PHONE_NUMBER_FORMAT" = "Entre com o código de verificação enviado para %@";

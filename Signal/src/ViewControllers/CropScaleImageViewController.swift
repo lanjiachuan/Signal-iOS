@@ -4,6 +4,7 @@
 
 import Foundation
 import MediaPlayer
+import SignalMessaging
 
 class OWSLayerView: UIView {
     let layoutCallback : (() -> Void)
@@ -101,15 +102,9 @@ class CropScaleImageViewController: OWSViewController {
 
     // MARK: Initializers
 
-    @available(*, unavailable, message:"use srcImage:successCompletion: constructor instead.")
+    @available(*, unavailable, message:"use other constructor instead.")
     required init?(coder aDecoder: NSCoder) {
-        self.srcImage = UIImage(named:"fail")!
-        self.successCompletion = { _ in
-        }
-        super.init(coder: aDecoder)
-        owsFail("\(self.TAG) invalid constructor")
-
-        configureCropAndScale()
+        fatalError("\(#function) is unimplemented.")
     }
 
     required init(srcImage: UIImage, successCompletion : @escaping (UIImage) -> Void) {

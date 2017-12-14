@@ -2,8 +2,7 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
-#import "NBPhoneNumberUtil.h"
+#import <libPhoneNumber_iOS/NBPhoneNumberUtil.h>
 #import "PhoneNumber.h"
 
 @interface PhoneNumberUtil : NSObject

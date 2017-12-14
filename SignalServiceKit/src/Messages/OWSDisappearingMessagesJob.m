@@ -3,9 +3,9 @@
 //
 
 #import "OWSDisappearingMessagesJob.h"
+#import "AppContext.h"
 #import "ContactsManagerProtocol.h"
 #import "NSDate+OWS.h"
-#import "NSDate+millisecondTimeStamp.h"
 #import "NSTimer+OWS.h"
 #import "OWSDisappearingConfigurationUpdateInfoMessage.h"
 #import "OWSDisappearingMessagesConfiguration.h"
@@ -15,7 +15,7 @@
 #import "TSStorageManager.h"
 
 NS_ASSUME_NONNULL_BEGIN
-
+// Can we move to Signal-iOS?
 @interface OWSDisappearingMessagesJob ()
 
 @property (nonatomic, readonly) YapDatabaseConnection *databaseConnection;
@@ -93,24 +93,24 @@ NS_ASSUME_NONNULL_BEGIN
             // sanity check
             if (message.expiresAt > now) {
                 DDLogError(
-                    @"%@ Refusing to remove message which doesn't expire until: %lld", self.tag, message.expiresAt);
+                    @"%@ Refusing to remove message which doesn't expire until: %lld", self.logTag, message.expiresAt);
                 return;
             }
 
-            DDLogDebug(@"%@ Removing message which expired at: %lld", self.tag, message.expiresAt);
+            DDLogDebug(@"%@ Removing message which expired at: %lld", self.logTag, message.expiresAt);
             [message removeWithTransaction:transaction];
             expirationCount++;
         }
                                                                transaction:transaction];
     }];
 
-    DDLogDebug(@"%@ Removed %u expired messages", self.tag, expirationCount);
+    DDLogDebug(@"%@ Removed %u expired messages", self.logTag, expirationCount);
 }
 
 // This method should only be called on the serialQueue.
 - (void)runLoop
 {
-    DDLogVerbose(@"%@ Run", self.tag);
+    DDLogVerbose(@"%@ Run", self.logTag);
 
     [self run];
 
@@ -123,7 +123,7 @@ NS_ASSUME_NONNULL_BEGIN
     if (!nextExpirationTimestampNumber) {
         // In theory we could kill the loop here. It should resume when the next expiring message is saved,
         // But this is a safeguard for any race conditions that exist while running the job as a new message is saved.
-        DDLogDebug(@"%@ No more expiring messages.", self.tag);
+        DDLogDebug(@"%@ No more expiring messages.", self.logTag);
         [self runLater];
         return;
     }
@@ -181,12 +181,11 @@ NS_ASSUME_NONNULL_BEGIN
     }
 
     int startedSecondsAgo = [NSDate new].timeIntervalSince1970 - expirationStartedAt / 1000.0;
-    DDLogDebug(@"%@ Starting expiration for message read %d seconds ago", self.tag, startedSecondsAgo);
+    DDLogDebug(@"%@ Starting expiration for message read %d seconds ago", self.logTag, startedSecondsAgo);
 
     // Don't clobber if multiple actions simultaneously triggered expiration.
     if (message.expireStartedAt == 0 || message.expireStartedAt > expirationStartedAt) {
-        message.expireStartedAt = expirationStartedAt;
-        [message saveWithTransaction:transaction];
+        [message updateWithExpireStartedAt:expirationStartedAt transaction:transaction];
     }
 
     // Necessary that the async expiration run happens *after* the message is saved with expiration configuration.
@@ -211,7 +210,7 @@ NS_ASSUME_NONNULL_BEGIN
                                                      DDLogWarn(
                                                          @"%@ Starting expiring message which should have already "
                                                          @"been started.",
-                                                         self.tag);
+                                                         self.logTag);
                                                      // specify "now" in case D.M. have since been disabled, but we have
                                                      // existing unstarted expiring messages that still need to expire.
                                                      [self setExpirationForMessage:message
@@ -225,57 +224,62 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)becomeConsistentWithConfigurationForMessage:(TSMessage *)message
                                     contactsManager:(id<ContactsManagerProtocol>)contactsManager
 {
-    dispatch_async(self.serialQueue, ^{
         [[self sharedJob] becomeConsistentWithConfigurationForMessage:message contactsManager:contactsManager];
-    });
 }
 
 - (void)becomeConsistentWithConfigurationForMessage:(TSMessage *)message
                                     contactsManager:(id<ContactsManagerProtocol>)contactsManager
 {
-    // Become eventually consistent in the case that the remote changed their settings at the same time.
-    // Also in case remote doesn't support expiring messages
-    OWSDisappearingMessagesConfiguration *disappearingMessagesConfiguration =
-        [OWSDisappearingMessagesConfiguration fetchOrCreateDefaultWithThreadId:message.uniqueThreadId];
+    OWSAssert(message);
+    OWSAssert(contactsManager);
 
-    BOOL changed = NO;
-    if (message.expiresInSeconds == 0) {
-        if (disappearingMessagesConfiguration.isEnabled) {
+    dispatch_async(OWSDisappearingMessagesJob.serialQueue, ^{
+        // Become eventually consistent in the case that the remote changed their settings at the same time.
+        // Also in case remote doesn't support expiring messages
+        OWSDisappearingMessagesConfiguration *disappearingMessagesConfiguration =
+            [OWSDisappearingMessagesConfiguration fetchOrCreateDefaultWithThreadId:message.uniqueThreadId];
+
+        BOOL changed = NO;
+        if (message.expiresInSeconds == 0) {
+            if (disappearingMessagesConfiguration.isEnabled) {
+                changed = YES;
+                DDLogWarn(@"%@ Received remote message which had no expiration set, disabling our expiration to become "
+                          @"consistent.",
+                    self.logTag);
+                disappearingMessagesConfiguration.enabled = NO;
+                [disappearingMessagesConfiguration save];
+            }
+        } else if (message.expiresInSeconds != disappearingMessagesConfiguration.durationSeconds) {
             changed = YES;
-            DDLogWarn(@"%@ Received remote message which had no expiration set, disabling our expiration to become "
+            DDLogInfo(@"%@ Received remote message with different expiration set, updating our expiration to become "
                       @"consistent.",
-                self.tag);
-            disappearingMessagesConfiguration.enabled = NO;
+                self.logTag);
+            disappearingMessagesConfiguration.enabled = YES;
+            disappearingMessagesConfiguration.durationSeconds = message.expiresInSeconds;
             [disappearingMessagesConfiguration save];
         }
-    } else if (message.expiresInSeconds != disappearingMessagesConfiguration.durationSeconds) {
-        changed = YES;
-        DDLogInfo(
-            @"%@ Received remote message with different expiration set, updating our expiration to become consistent.",
-            self.tag);
-        disappearingMessagesConfiguration.enabled = YES;
-        disappearingMessagesConfiguration.durationSeconds = message.expiresInSeconds;
-        [disappearingMessagesConfiguration save];
-    }
 
-    if (!changed) {
-        return;
-    }
+        if (!changed) {
+            return;
+        }
 
-    if ([message isKindOfClass:[TSIncomingMessage class]]) {
-        TSIncomingMessage *incomingMessage = (TSIncomingMessage *)message;
-        NSString *contactName = [contactsManager displayNameForPhoneIdentifier:incomingMessage.authorId];
+        if ([message isKindOfClass:[TSIncomingMessage class]]) {
+            TSIncomingMessage *incomingMessage = (TSIncomingMessage *)message;
+            NSString *contactName = [contactsManager displayNameForPhoneIdentifier:incomingMessage.messageAuthorId];
 
-        [[[OWSDisappearingConfigurationUpdateInfoMessage alloc] initWithTimestamp:message.timestamp
-                                                                           thread:message.thread
-                                                                    configuration:disappearingMessagesConfiguration
-                                                              createdByRemoteName:contactName] save];
-    } else {
-        [[[OWSDisappearingConfigurationUpdateInfoMessage alloc] initWithTimestamp:message.timestamp
-                                                                           thread:message.thread
-                                                                    configuration:disappearingMessagesConfiguration]
-            save];
-    }
+            // We want the info message to appear _before_ the message.
+            [[[OWSDisappearingConfigurationUpdateInfoMessage alloc] initWithTimestamp:message.timestamp - 1
+                                                                               thread:message.thread
+                                                                        configuration:disappearingMessagesConfiguration
+                                                                  createdByRemoteName:contactName] save];
+        } else {
+            // We want the info message to appear _before_ the message.
+            [[[OWSDisappearingConfigurationUpdateInfoMessage alloc] initWithTimestamp:message.timestamp - 1
+                                                                               thread:message.thread
+                                                                        configuration:disappearingMessagesConfiguration]
+                save];
+        }
+    });
 }
 
 - (void)startIfNecessary
@@ -317,8 +321,8 @@ NS_ASSUME_NONNULL_BEGIN
     OWSAssert(date);
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive) {
-            // Don't schedule run when inactive.
+        if (!CurrentAppContext().isMainAppAndActive) {
+            // Don't schedule run when inactive or not in main app.
             return;
         }
 
@@ -334,7 +338,7 @@ NS_ASSUME_NONNULL_BEGIN
         NSDate *timerScheduleDate = [NSDate dateWithTimeIntervalSinceNow:delaySeconds];
         if (self.timerScheduleDate && [timerScheduleDate timeIntervalSinceDate:self.timerScheduleDate] > 0) {
             DDLogVerbose(@"%@ Request to run at %@ (%d sec.) ignored due to scheduled run at %@ (%d sec.)",
-                self.tag,
+                self.logTag,
                 [dateFormatter stringFromDate:date],
                 (int)round(MAX(0, [date timeIntervalSinceDate:[NSDate new]])),
                 [dateFormatter stringFromDate:self.timerScheduleDate],
@@ -344,7 +348,7 @@ NS_ASSUME_NONNULL_BEGIN
 
         // Update Schedule
         DDLogVerbose(@"%@ Scheduled run at %@ (%d sec.)",
-            self.tag,
+            self.logTag,
             [dateFormatter stringFromDate:timerScheduleDate],
             (int)round(MAX(0, [timerScheduleDate timeIntervalSinceDate:[NSDate new]])));
         [self resetTimer];
@@ -361,9 +365,9 @@ NS_ASSUME_NONNULL_BEGIN
 {
     OWSAssert([NSThread isMainThread]);
 
-    if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive) {
-        // Don't run when inactive.
-        OWSAssert(0);
+    if (!CurrentAppContext().isMainAppAndActive) {
+        // Don't schedule run when inactive or not in main app.
+        OWSFail(@"%@ Disappearing messages job timer fired while main app inactive.", self.logTag);
         return;
     }
 
@@ -397,18 +401,6 @@ NS_ASSUME_NONNULL_BEGIN
     OWSAssert([NSThread isMainThread]);
 
     [self resetTimer];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

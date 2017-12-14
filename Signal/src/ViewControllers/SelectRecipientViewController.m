@@ -3,19 +3,18 @@
 //
 
 #import "SelectRecipientViewController.h"
-#import "ContactTableViewCell.h"
-#import "ContactsViewHelper.h"
 #import "CountryCodeViewController.h"
 #import "Environment.h"
 #import "OWSContactsManager.h"
-#import "OWSTableViewController.h"
 #import "PhoneNumber.h"
 #import "Signal-Swift.h"
-#import "StringUtil.h"
-#import "UIFont+OWS.h"
-#import "UIUtil.h"
-#import "UIView+OWS.h"
 #import "ViewControllerUtils.h"
+#import <SignalMessaging/ContactTableViewCell.h>
+#import <SignalMessaging/ContactsViewHelper.h>
+#import <SignalMessaging/OWSTableViewController.h>
+#import <SignalMessaging/UIFont+OWS.h>
+#import <SignalMessaging/UIUtil.h>
+#import <SignalMessaging/UIView+OWS.h>
 #import <SignalServiceKit/ContactsUpdater.h>
 #import <SignalServiceKit/OWSBlockingManager.h>
 #import <SignalServiceKit/PhoneNumberUtil.h>
@@ -37,7 +36,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 
 @property (nonatomic) UITextField *phoneNumberTextField;
 
-@property (nonatomic) UIButton *phoneNumberButton;
+@property (nonatomic) OWSFlatButton *phoneNumberButton;
 
 @property (nonatomic) UILabel *examplePhoneNumberLabel;
 
@@ -172,24 +171,19 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
     return _phoneNumberTextField;
 }
 
-- (UIButton *)phoneNumberButton
+- (OWSFlatButton *)phoneNumberButton
 {
     if (!_phoneNumberButton) {
-        // TODO: Eventually we should make a view factory that will allow us to
-        //       create views with consistent appearance across the app and move
-        //       towards a "design language."
-        _phoneNumberButton = [UIButton buttonWithType:UIButtonTypeCustom];
-        _phoneNumberButton.titleLabel.font = [UIFont ows_mediumFontWithSize:18.f];
-        [_phoneNumberButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        [_phoneNumberButton setBackgroundColor:[UIColor ows_materialBlueColor]];
-        _phoneNumberButton.clipsToBounds = YES;
-        _phoneNumberButton.layer.cornerRadius = 3.f;
-        [_phoneNumberButton setTitle:[self.delegate phoneNumberButtonText] forState:UIControlStateNormal];
-        [_phoneNumberButton addTarget:self
-                               action:@selector(phoneNumberButtonPressed:)
-                     forControlEvents:UIControlEventTouchUpInside];
-        [_phoneNumberButton autoSetDimension:ALDimensionWidth toSize:140];
-        [_phoneNumberButton autoSetDimension:ALDimensionHeight toSize:40];
+        const CGFloat kButtonHeight = 40;
+        OWSFlatButton *button = [OWSFlatButton buttonWithTitle:[self.delegate phoneNumberButtonText]
+                                                          font:[OWSFlatButton fontForHeight:kButtonHeight]
+                                                    titleColor:[UIColor whiteColor]
+                                               backgroundColor:[UIColor ows_materialBlueColor]
+                                                        target:self
+                                                      selector:@selector(phoneNumberButtonPressed)];
+        _phoneNumberButton = button;
+        [button autoSetDimension:ALDimensionWidth toSize:140];
+        [button autoSetDimension:ALDimensionHeight toSize:kButtonHeight];
     }
     return _phoneNumberButton;
 }
@@ -229,8 +223,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
     }
 
     if (!countryCode || !callingCode) {
-        NSLocale *locale = NSLocale.currentLocale;
-        countryCode = [locale objectForKey:NSLocaleCountryCode];
+        countryCode = [PhoneNumber defaultCountryCode];
         callingCode = [[PhoneNumberUtil sharedUtil].nbPhoneNumberUtil getCountryCodeForRegion:countryCode];
     }
 
@@ -275,7 +268,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
     [self presentViewController:navigationController animated:YES completion:[UIUtil modalCompletionBlock]];
 }
 
-- (void)phoneNumberButtonPressed:(id)sender
+- (void)phoneNumberButtonPressed
 {
     [self tryToSelectPhoneNumber];
 }
@@ -285,8 +278,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
     OWSAssert(self.delegate);
 
     if (![self hasValidPhoneNumber]) {
-        DDLogError(@"Invalid phone number was selected.");
-        OWSAssert(0);
+        OWSFail(@"Invalid phone number was selected.");
         return;
     }
 
@@ -299,8 +291,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
         [possiblePhoneNumbers addObject:phoneNumber.toE164];
     }
     if ([possiblePhoneNumbers count] < 1) {
-        DDLogError(@"Couldn't parse phone number.");
-        OWSAssert(0);
+        OWSFail(@"Couldn't parse phone number.");
         return;
     }
 
@@ -312,51 +303,43 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 
     if ([self.delegate shouldValidatePhoneNumbers]) {
         // Show an alert while validating the recipient.
-        __block BOOL wasCancelled = NO;
-        UIAlertController *activityAlert = [UIAlertController
-            alertControllerWithTitle:NSLocalizedString(@"ALERT_VALIDATE_RECIPIENT_TITLE",
-                                         @"A title for the alert shown while validating a signal account")
-                             message:NSLocalizedString(@"ALERT_VALIDATE_RECIPIENT_MESSAGE",
-                                         @"A message for the alert shown while validating a signal account")
-                      preferredStyle:UIAlertControllerStyleAlert];
-        [activityAlert addAction:[UIAlertAction actionWithTitle:CommonStrings.cancelButton
-                                                          style:UIAlertActionStyleCancel
-                                                        handler:^(UIAlertAction *_Nonnull action) {
-                                                            wasCancelled = YES;
-                                                        }]];
-        [[UIApplication sharedApplication].frontmostViewController presentViewController:activityAlert
-                                                                                animated:YES
-                                                                              completion:nil];
 
         __weak SelectRecipientViewController *weakSelf = self;
-        [[ContactsUpdater sharedUpdater] lookupIdentifiers:possiblePhoneNumbers
-            success:^(NSArray<SignalRecipient *> *recipients) {
-                OWSAssert([NSThread isMainThread]);
-                OWSAssert(recipients.count > 0);
+        [ModalActivityIndicatorViewController
+            presentFromViewController:self
+                            canCancel:YES
+                      backgroundBlock:^(ModalActivityIndicatorViewController *modalActivityIndicator) {
+                          [[ContactsUpdater sharedUpdater] lookupIdentifiers:possiblePhoneNumbers
+                              success:^(NSArray<SignalRecipient *> *recipients) {
+                                  OWSAssert([NSThread isMainThread]);
+                                  OWSAssert(recipients.count > 0);
 
-                if (wasCancelled) {
-                    return;
-                }
+                                  if (modalActivityIndicator.wasCancelled) {
+                                      return;
+                                  }
 
-                NSString *recipientId = recipients[0].uniqueId;
-                [activityAlert dismissViewControllerAnimated:NO
-                                                  completion:^{
-                                                      [weakSelf.delegate phoneNumberWasSelected:recipientId];
-                                                  }];
-            }
-            failure:^(NSError *error) {
-                OWSAssert([NSThread isMainThread]);
-                if (wasCancelled) {
-                    return;
-                }
-                [activityAlert dismissViewControllerAnimated:NO
-                                                  completion:^{
-                                                      [OWSAlerts
-                                                          showAlertWithTitle:NSLocalizedString(@"ALERT_ERROR_TITLE",
-                                                                                 @"Title for a generic error alert.")
-                                                                     message:error.localizedDescription];
-                                                  }];
-            }];
+                                  NSString *recipientId = recipients[0].uniqueId;
+                                  [modalActivityIndicator
+                                      dismissViewControllerAnimated:NO
+                                                         completion:^{
+                                                             [weakSelf.delegate phoneNumberWasSelected:recipientId];
+                                                         }];
+                              }
+                              failure:^(NSError *error) {
+                                  OWSAssert([NSThread isMainThread]);
+                                  if (modalActivityIndicator.wasCancelled) {
+                                      return;
+                                  }
+                                  [modalActivityIndicator
+                                      dismissViewControllerAnimated:NO
+                                                         completion:^{
+                                                             [OWSAlerts showAlertWithTitle:
+                                                                            NSLocalizedString(@"ALERT_ERROR_TITLE",
+                                                                                @"Title for a generic error alert.")
+                                                                                   message:error.localizedDescription];
+                                                         }];
+                              }];
+                      }];
     } else {
         NSString *recipientId = possiblePhoneNumbers[0];
         [self.delegate phoneNumberWasSelected:recipientId];
@@ -394,7 +377,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
     BOOL isEnabled = [self hasValidPhoneNumber];
     self.phoneNumberButton.enabled = isEnabled;
     [self.phoneNumberButton
-        setBackgroundColor:(isEnabled ? [UIColor ows_signalBrandBlueColor] : [UIColor lightGrayColor])];
+        setBackgroundColorsWithUpColor:(isEnabled ? [UIColor ows_signalBrandBlueColor] : [UIColor lightGrayColor])];
 }
 
 #pragma mark - CountryCodeViewControllerDelegate
@@ -471,11 +454,11 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 
         UILabel *countryCodeLabel = strongSelf.countryCodeLabel;
         [countryRow addSubview:countryCodeLabel];
-        [countryCodeLabel autoPinLeadingToSuperView];
+        [countryCodeLabel autoPinLeadingToSuperview];
         [countryCodeLabel autoVCenterInSuperview];
 
         [countryRow addSubview:strongSelf.countryCodeButton];
-        [strongSelf.countryCodeButton autoPinTrailingToSuperView];
+        [strongSelf.countryCodeButton autoPinTrailingToSuperview];
         [strongSelf.countryCodeButton autoVCenterInSuperview];
 
         // Phone Number Row
@@ -487,12 +470,12 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 
         UILabel *phoneNumberLabel = strongSelf.phoneNumberLabel;
         [phoneNumberRow addSubview:phoneNumberLabel];
-        [phoneNumberLabel autoPinLeadingToSuperView];
+        [phoneNumberLabel autoPinLeadingToSuperview];
         [phoneNumberLabel autoVCenterInSuperview];
 
         [phoneNumberRow addSubview:strongSelf.phoneNumberTextField];
         [strongSelf.phoneNumberTextField autoPinLeadingToTrailingOfView:phoneNumberLabel margin:10.f];
-        [strongSelf.phoneNumberTextField autoPinTrailingToSuperView];
+        [strongSelf.phoneNumberTextField autoPinTrailingToSuperview];
         [strongSelf.phoneNumberTextField autoVCenterInSuperview];
 
         // Example row.
@@ -501,7 +484,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
                                                               superview:cell.contentView];
         [examplePhoneNumberRow addSubview:strongSelf.examplePhoneNumberLabel];
         [strongSelf.examplePhoneNumberLabel autoVCenterInSuperview];
-        [strongSelf.examplePhoneNumberLabel autoPinTrailingToSuperView];
+        [strongSelf.examplePhoneNumberLabel autoPinTrailingToSuperview];
 
         // Phone Number Button Row
         UIView *buttonRow = [strongSelf createRowWithHeight:kButtonRowHeight
@@ -509,7 +492,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
                                                   superview:cell.contentView];
         [buttonRow addSubview:strongSelf.phoneNumberButton];
         [strongSelf.phoneNumberButton autoVCenterInSuperview];
-        [strongSelf.phoneNumberButton autoPinTrailingToSuperView];
+        [strongSelf.phoneNumberButton autoPinTrailingToSuperview];
 
         [buttonRow autoPinEdgeToSuperviewEdge:ALEdgeBottom];
 
@@ -588,7 +571,7 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 
 #pragma mark - OWSTableViewControllerDelegate
 
-- (void)tableViewDidScroll
+- (void)tableViewWillBeginDragging
 {
     [self.phoneNumberTextField resignFirstResponder];
 }
@@ -603,18 +586,6 @@ NSString *const kSelectRecipientViewControllerCellIdentifier = @"kSelectRecipien
 - (BOOL)shouldHideLocalNumber
 {
     return [self.delegate shouldHideLocalNumber];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

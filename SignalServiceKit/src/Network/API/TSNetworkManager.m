@@ -6,7 +6,6 @@
 #import "NSURLSessionDataTask+StatusCode.h"
 #import "OWSSignalService.h"
 #import "TSAccountManager.h"
-#import "TSStorageManager+keyingMaterial.h"
 #import "TSVerifyCodeRequest.h"
 #import <AFNetworking/AFNetworking.h>
 
@@ -56,7 +55,7 @@ typedef void (^failureBlock)(NSURLSessionDataTask *task, NSError *error);
             success:(void (^)(NSURLSessionDataTask *task, id responseObject))success
             failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failureBlock
 {
-    DDLogInfo(@"%@ Making request: %@", self.tag, request);
+    DDLogInfo(@"%@ Making request: %@", self.logTag, request);
 
     void (^failure)(NSURLSessionDataTask *task, NSError *error) =
         [TSNetworkManager errorPrettifyingForFailureBlock:failureBlock];
@@ -74,7 +73,7 @@ typedef void (^failureBlock)(NSURLSessionDataTask *task, NSError *error);
         if (![request isKindOfClass:[TSRequestVerificationCodeRequest class]]) {
             [sessionManager.requestSerializer
                 setAuthorizationHeaderFieldWithUsername:[TSAccountManager localNumber]
-                                               password:[TSStorageManager serverAuthToken]];
+                                               password:[TSAccountManager serverAuthToken]];
         }
 
         if ([request.HTTPMethod isEqualToString:@"GET"]) {
@@ -225,18 +224,6 @@ typedef void (^failureBlock)(NSURLSessionDataTask *task, NSError *error);
     }
 
     return [NSError errorWithDomain:TSNetworkManagerDomain code:code userInfo:dict];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

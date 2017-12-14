@@ -5,11 +5,12 @@
 #import "InboxTableViewCell.h"
 #import "OWSAvatarBuilder.h"
 #import "Signal-Swift.h"
-#import "Util.h"
 #import "ViewControllerUtils.h"
+#import <SignalMessaging/OWSFormat.h>
+#import <SignalMessaging/OWSUserProfile.h>
+#import <SignalServiceKit/OWSMessageManager.h>
 #import <SignalServiceKit/TSContactThread.h>
 #import <SignalServiceKit/TSGroupThread.h>
-#import <SignalServiceKit/TSMessagesManager.h>
 #import <SignalServiceKit/TSThread.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -72,7 +73,7 @@ const NSUInteger kAvatarViewDiameter = 52;
     [self.contentView addSubview:self.avatarView];
     [self.avatarView autoSetDimension:ALDimensionWidth toSize:self.avatarSize];
     [self.avatarView autoSetDimension:ALDimensionHeight toSize:self.avatarSize];
-    [self.avatarView autoPinLeadingToSuperView];
+    [self.avatarView autoPinLeadingToSuperview];
     [self.avatarView autoVCenterInSuperview];
 
     self.nameLabel = [UILabel new];
@@ -98,7 +99,7 @@ const NSUInteger kAvatarViewDiameter = 52;
     self.timeLabel = [UILabel new];
     self.timeLabel.font = [UIFont ows_lightFontWithSize:14.f];
     [self.contentView addSubview:self.timeLabel];
-    [self.timeLabel autoPinTrailingToSuperView];
+    [self.timeLabel autoPinTrailingToSuperview];
     [self.timeLabel autoAlignAxis:ALAxisHorizontal toSameAxisOfView:self.nameLabel];
     [self.timeLabel autoPinLeadingToTrailingOfView:self.nameLabel margin:10.f];
     [self.timeLabel setContentHuggingHorizontalHigh];
@@ -111,7 +112,7 @@ const NSUInteger kAvatarViewDiameter = 52;
     [self.contentView addSubview:self.unreadBadge];
     [self.unreadBadge autoSetDimension:ALDimensionWidth toSize:kunreadBadgeSize];
     [self.unreadBadge autoSetDimension:ALDimensionHeight toSize:kunreadBadgeSize];
-    [self.unreadBadge autoPinTrailingToSuperView];
+    [self.unreadBadge autoPinTrailingToSuperview];
     [self.unreadBadge autoPinEdge:ALEdgeBottom toEdge:ALEdgeBottom ofView:self.avatarView];
     [self.unreadBadge setContentHuggingHorizontalHigh];
     [self.unreadBadge setCompressionResistanceHigh];
@@ -188,7 +189,7 @@ const NSUInteger kAvatarViewDiameter = 52;
                                                                                                 : [UIColor lightGrayColor]),
                                                               }]];
         }
-        NSString *displayableText = [[DisplayableTextFilter new] displayableText:thread.lastMessageLabel];
+        NSString *displayableText = [DisplayableText displayableText:thread.lastMessageLabel];
         if (displayableText) {
             [snippetText appendAttributedString:[[NSAttributedString alloc]
                                                     initWithString:displayableText
@@ -204,9 +205,9 @@ const NSUInteger kAvatarViewDiameter = 52;
     }
 
     NSAttributedString *attributedDate = [self dateAttributedString:thread.lastMessageDate];
-    NSUInteger unreadCount = [[TSMessagesManager sharedManager] unreadMessagesInThread:thread];
+    NSUInteger unreadCount = [[OWSMessageManager sharedManager] unreadMessagesInThread:thread];
 
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(otherUsersProfileDidChange:)
                                                  name:kNSNotificationName_OtherUsersProfileDidChange
@@ -224,7 +225,7 @@ const NSUInteger kAvatarViewDiameter = 52;
     if (unreadCount > 0) {
         self.unreadBadge.hidden = NO;
         self.unreadLabel.hidden = NO;
-        self.unreadLabel.text = [ViewControllerUtils formatInt:MIN(99, (int)unreadCount)];
+        self.unreadLabel.text = [OWSFormat formatInt:MIN(99, (int)unreadCount)];
     } else {
         self.unreadBadge.hidden = YES;
         self.unreadLabel.hidden = YES;
@@ -250,6 +251,7 @@ const NSUInteger kAvatarViewDiameter = 52;
     self.avatarView.image =
         [OWSAvatarBuilder buildImageForThread:thread diameter:kAvatarViewDiameter contactsManager:contactsManager];
 }
+
 #pragma mark - Date formatting
 
 - (NSAttributedString *)dateAttributedString:(NSDate *)date {
@@ -278,8 +280,9 @@ const NSUInteger kAvatarViewDiameter = 52;
 
 - (void)prepareForReuse
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [super prepareForReuse];
+
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 #pragma mark - Name
@@ -326,7 +329,7 @@ const NSUInteger kAvatarViewDiameter = 52;
     NSAttributedString *name;
     if (thread.isGroupThread) {
         if (thread.name.length == 0) {
-            name = [[NSAttributedString alloc] initWithString:NSLocalizedString(@"NEW_GROUP_DEFAULT_TITLE", @"")];
+            name = [[NSAttributedString alloc] initWithString:[MessageStrings newGroupDefaultTitle]];
         } else {
             name = [[NSAttributedString alloc] initWithString:thread.name];
         }
@@ -337,18 +340,6 @@ const NSUInteger kAvatarViewDiameter = 52;
     }
     
     self.nameLabel.attributedText = name;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)logTag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)logTag
-{
-    return self.class.logTag;
 }
 
 @end

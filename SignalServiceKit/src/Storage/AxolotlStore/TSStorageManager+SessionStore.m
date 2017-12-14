@@ -11,7 +11,7 @@ NSString *const kSessionStoreDBConnectionKey = @"kSessionStoreDBConnectionKey";
 void AssertIsOnSessionStoreQueue()
 {
 #ifdef DEBUG
-    if (SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(10, 0)) {
+    if (@available(iOS 10.0, *)) {
         dispatch_assert_queue([OWSDispatch sessionStoreQueue]);
     } // else, skip assert as it's a development convenience.
 #endif
@@ -72,7 +72,7 @@ void AssertIsOnSessionStoreQueue()
 {
     // Deprecated. We aren't currently using this anywhere, but it's "required" by the SessionStore protocol.
     // If we are going to start using it I'd want to re-verify it works as intended.
-    OWSFail(@"%@ subDevicesSessions is deprecated", self.tag);
+    OWSFail(@"%@ subDevicesSessions is deprecated", self.logTag);
     AssertIsOnSessionStoreQueue();
 
     __block NSDictionary *dictionary;
@@ -189,6 +189,14 @@ void AssertIsOnSessionStoreQueue()
 
 #pragma mark - debug
 
+- (void)resetSessionStore
+{
+    DDLogWarn(@"%@ resetting session store", self.logTag);
+    [self.sessionDBConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
+        [transaction removeAllObjectsInCollection:TSStorageManagerSessionStoreCollection];
+    }];
+}
+
 - (void)printAllSessions
 {
     AssertIsOnSessionStoreQueue();
@@ -231,18 +239,6 @@ void AssertIsOnSessionStoreQueue()
                                          }];
                                      }];
     }];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

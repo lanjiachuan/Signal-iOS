@@ -13,10 +13,9 @@
 #import "OWSNavigationController.h"
 #import "PrivacySettingsTableViewController.h"
 #import "ProfileViewController.h"
-#import "PropertyListPreferences.h"
 #import "PushManager.h"
 #import "Signal-Swift.h"
-#import "UIUtil.h"
+#import <SignalMessaging/UIUtil.h>
 #import <SignalServiceKit/TSAccountManager.h>
 #import <SignalServiceKit/TSSocketManager.h>
 
@@ -49,7 +48,7 @@
         return self;
     }
 
-    _contactsManager = [Environment getCurrent].contactsManager;
+    _contactsManager = [Environment current].contactsManager;
 
     return self;
 }
@@ -61,7 +60,7 @@
         return self;
     }
 
-    _contactsManager = [Environment getCurrent].contactsManager;
+    _contactsManager = [Environment current].contactsManager;
 
     return self;
 }
@@ -198,21 +197,23 @@
         UITableViewCell *cell = [UITableViewCell new];
         cell.preservesSuperviewLayoutMargins = YES;
         cell.contentView.preservesSuperviewLayoutMargins = YES;
-        UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-        button.backgroundColor = [UIColor ows_destructiveRedColor];
-        [button setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        [button setTitle:NSLocalizedString(@"SETTINGS_DELETE_ACCOUNT_BUTTON", @"") forState:UIControlStateNormal];
-        button.titleLabel.font = [UIFont ows_mediumFontWithSize:18.f];
-        button.titleLabel.textAlignment = NSTextAlignmentCenter;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+        const CGFloat kButtonHeight = 40.f;
+        OWSFlatButton *button = [OWSFlatButton buttonWithTitle:NSLocalizedString(@"SETTINGS_DELETE_ACCOUNT_BUTTON", @"")
+                                                          font:[OWSFlatButton fontForHeight:kButtonHeight]
+                                                    titleColor:[UIColor whiteColor]
+                                               backgroundColor:[UIColor ows_destructiveRedColor]
+                                                        target:self
+                                                      selector:@selector(unregisterUser)];
         [cell.contentView addSubview:button];
-        [button autoSetDimension:ALDimensionHeight toSize:50.f];
+        [button autoSetDimension:ALDimensionHeight toSize:kButtonHeight];
         [button autoVCenterInSuperview];
         [button autoPinLeadingAndTrailingToSuperview];
-        [button addTarget:self action:@selector(unregisterUser) forControlEvents:UIControlEventTouchUpInside];
-        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
         return cell;
     }
-                                           customRowHeight:100.f
+                                           customRowHeight:90.f
                                                actionBlock:nil]];
 
     [contents addSection:section];
@@ -241,7 +242,7 @@
     }
     [cell.contentView addSubview:avatarView];
     [avatarView autoVCenterInSuperview];
-    [avatarView autoPinLeadingToSuperView];
+    [avatarView autoPinLeadingToSuperview];
     [avatarView autoSetDimension:ALDimensionWidth toSize:kAvatarSize];
     [avatarView autoSetDimension:ALDimensionHeight toSize:kAvatarSize];
 
@@ -285,7 +286,7 @@
     subtitleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     [nameView addSubview:subtitleLabel];
     [subtitleLabel autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:titleLabel];
-    [subtitleLabel autoPinLeadingToSuperView];
+    [subtitleLabel autoPinLeadingToSuperview];
     [subtitleLabel autoPinEdgeToSuperviewEdge:ALEdgeBottom];
 
     UIImage *disclosureImage = [UIImage imageNamed:(self.view.isRTL ? @"NavBarBack" : @"NavBarBackRTL")];
@@ -295,8 +296,9 @@
     disclosureButton.tintColor = [UIColor colorWithRGBHex:0xcccccc];
     [cell.contentView addSubview:disclosureButton];
     [disclosureButton autoVCenterInSuperview];
-    [disclosureButton autoPinTrailingToSuperView];
+    [disclosureButton autoPinTrailingToSuperview];
     [disclosureButton autoPinLeadingToTrailingOfView:nameView margin:16.f];
+    [disclosureButton setContentCompressionResistancePriority:(UILayoutPriorityDefaultHigh + 1) forAxis:UILayoutConstraintAxisHorizontal];
 
     return cell;
 }
@@ -374,12 +376,21 @@
 
 - (void)proceedToUnregistration
 {
-    [TSAccountManager unregisterTextSecureWithSuccess:^{
-        [Environment resetAppData];
-    }
-        failure:^(NSError *error) {
-            [OWSAlerts showAlertWithTitle:NSLocalizedString(@"UNREGISTER_SIGNAL_FAIL", @"")];
-        }];
+    [ModalActivityIndicatorViewController
+        presentFromViewController:self
+                        canCancel:NO
+                  backgroundBlock:^(ModalActivityIndicatorViewController *modalActivityIndicator) {
+                      [TSAccountManager unregisterTextSecureWithSuccess:^{
+                          [SignalApp resetAppData];
+                      }
+                          failure:^(NSError *error) {
+                              dispatch_async(dispatch_get_main_queue(), ^{
+                                  [modalActivityIndicator dismissWithCompletion:^{
+                                      [OWSAlerts showAlertWithTitle:NSLocalizedString(@"UNREGISTER_SIGNAL_FAIL", @"")];
+                                  }];
+                              });
+                          }];
+                  }];
 }
 
 #pragma mark - Socket Status Notifications
@@ -397,18 +408,6 @@
     OWSAssert([NSThread isMainThread]);
 
     [self updateTableContents];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

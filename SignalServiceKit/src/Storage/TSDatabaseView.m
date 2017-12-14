@@ -3,6 +3,7 @@
 //
 
 #import "TSDatabaseView.h"
+#import "NSNotificationCenter+OWS.h"
 #import "OWSDevice.h"
 #import "OWSReadTracking.h"
 #import "TSIncomingMessage.h"
@@ -10,10 +11,10 @@
 #import "TSOutgoingMessage.h"
 #import "TSStorageManager.h"
 #import "TSThread.h"
+#import <YapDatabase/YapDatabaseCrossProcessNotification.h>
 #import <YapDatabase/YapDatabaseView.h>
 
-NSString *const kNSNotificationName_DatabaseViewRegistrationComplete =
-    @"kNSNotificationName_DatabaseViewRegistrationComplete";
+NSString *const DatabaseViewRegistrationCompleteNotification = @"DatabaseViewRegistrationCompleteNotification";
 
 NSString *const TSInboxGroup = @"TSInboxGroup";
 NSString *const TSArchiveGroup = @"TSArchiveGroup";
@@ -64,11 +65,36 @@ NSString *const TSSecondaryDevicesDatabaseViewExtensionName = @"TSSecondaryDevic
     return self;
 }
 
+- (BOOL)hasPendingViewRegistrations
+{
+    @synchronized(self)
+    {
+        return !self.areAllAsyncRegistrationsComplete;
+    }
+}
+
 + (BOOL)hasPendingViewRegistrations
 {
-    OWSAssert([NSThread isMainThread]);
-
     return ![TSDatabaseView sharedInstance].areAllAsyncRegistrationsComplete;
+}
+
+- (void)setAreAllAsyncRegistrationsComplete
+{
+    @synchronized(self)
+    {
+        OWSAssert(!self.areAllAsyncRegistrationsComplete);
+
+        self.areAllAsyncRegistrationsComplete = YES;
+    }
+}
+
++ (void)registerCrossProcessNotifier
+{
+    // I don't think the identifier and name of this extension matter for our purposes,
+    // so long as they don't conflict with any other extension names.
+    YapDatabaseExtension *extension =
+        [[YapDatabaseCrossProcessNotification alloc] initWithIdentifier:@"SignalCrossProcessNotifier"];
+    [[TSStorageManager sharedManager].database registerExtension:extension withName:@"SignalCrossProcessNotifier"];
 }
 
 + (void)registerMessageDatabaseViewWithName:(NSString *)viewName
@@ -103,7 +129,7 @@ NSString *const TSSecondaryDevicesDatabaseViewExtensionName = @"TSSecondaryDevic
                    completionBlock:^(BOOL ready) {
                        OWSCAssert(ready);
 
-                       DDLogInfo(@"%@ asyncRegisterExtension: %@ -> %d", self.tag, viewName, ready);
+                       DDLogInfo(@"%@ asyncRegisterExtension: %@ -> %d", self.logTag, viewName, ready);
                    }];
     } else {
         [[TSStorageManager sharedManager].database registerExtension:view withName:viewName];
@@ -375,9 +401,9 @@ NSString *const TSSecondaryDevicesDatabaseViewExtensionName = @"TSSecondaryDevic
                       withName:TSSecondaryDevicesDatabaseViewExtensionName
                completionBlock:^(BOOL ready) {
                    if (ready) {
-                       DDLogDebug(@"%@ Successfully set up extension: %@", self.tag, TSSecondaryDevicesGroup);
+                       DDLogDebug(@"%@ Successfully set up extension: %@", self.logTag, TSSecondaryDevicesGroup);
                    } else {
-                       DDLogError(@"%@ Unable to setup extension: %@", self.tag, TSSecondaryDevicesGroup);
+                       DDLogError(@"%@ Unable to setup extension: %@", self.logTag, TSSecondaryDevicesGroup);
                    }
                }];
 }
@@ -423,26 +449,12 @@ NSString *const TSSecondaryDevicesDatabaseViewExtensionName = @"TSSecondaryDevic
     // All async registrations are complete when writes are unblocked.
     [[TSStorageManager sharedManager].newDatabaseConnection
         asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *_Nonnull transaction) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                TSDatabaseView.sharedInstance.areAllAsyncRegistrationsComplete = YES;
-                [[NSNotificationCenter defaultCenter]
-                    postNotificationName:kNSNotificationName_DatabaseViewRegistrationComplete
-                                  object:nil
-                                userInfo:nil];
-            });
+            [TSDatabaseView.sharedInstance setAreAllAsyncRegistrationsComplete];
+
+            [[NSNotificationCenter defaultCenter] postNotificationNameAsync:DatabaseViewRegistrationCompleteNotification
+                                                                     object:nil
+                                                                   userInfo:nil];
         }];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

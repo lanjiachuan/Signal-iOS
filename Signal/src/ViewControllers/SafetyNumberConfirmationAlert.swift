@@ -3,6 +3,7 @@
 //
 
 import Foundation
+import SignalServiceKit
 
 class SafetyNumberConfirmationAlert: NSObject {
 
@@ -74,7 +75,7 @@ class SafetyNumberConfirmationAlert: NSObject {
         }
         actionSheetController.addAction(showSafetyNumberAction)
 
-        actionSheetController.addAction(OWSAlerts.cancelAction())
+        actionSheetController.addAction(OWSAlerts.cancelAction)
 
         UIApplication.shared.frontmostViewController?.present(actionSheetController, animated: true)
         return true

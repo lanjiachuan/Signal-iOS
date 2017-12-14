@@ -3,7 +3,6 @@
 //
 
 #import <AddressBook/AddressBook.h>
-#import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -50,7 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
                                     andImage:(nullable UIImage *)image
                                 andContactID:(ABRecordID)record;
 
-- (instancetype)initWithSystemContact:(CNContact *)contact;
+- (instancetype)initWithSystemContact:(CNContact *)contact NS_AVAILABLE_IOS(9_0);
 
 - (NSString *)nameForPhoneNumber:(NSString *)recipientId;
 

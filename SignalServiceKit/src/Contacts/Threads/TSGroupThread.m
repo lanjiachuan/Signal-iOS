@@ -36,11 +36,19 @@ NS_ASSUME_NONNULL_BEGIN
     return self;
 }
 
-- (instancetype)initWithGroupIdData:(NSData *)groupId
+- (instancetype)initWithGroupId:(NSData *)groupId
 {
     OWSAssert(groupId.length > 0);
 
-    TSGroupModel *groupModel = [[TSGroupModel alloc] initWithTitle:nil memberIds:nil image:nil groupId:groupId];
+    NSString *localNumber = [TSAccountManager localNumber];
+    OWSAssert(localNumber.length > 0);
+
+    TSGroupModel *groupModel = [[TSGroupModel alloc] initWithTitle:nil
+                                                         memberIds:[@[
+                                                             localNumber,
+                                                         ] mutableCopy]
+                                                             image:nil
+                                                           groupId:groupId];
 
     self = [self initWithGroupModel:groupModel];
     if (!self) {
@@ -50,23 +58,35 @@ NS_ASSUME_NONNULL_BEGIN
     return self;
 }
 
-+ (instancetype)threadWithGroupModel:(TSGroupModel *)groupModel transaction:(YapDatabaseReadTransaction *)transaction
-{
-    OWSAssert(groupModel);
-    OWSAssert(groupModel.groupId.length > 0);
-
-    return [self fetchObjectWithUniqueID:[self threadIdFromGroupId:groupModel.groupId] transaction:transaction];
-}
-
-+ (instancetype)getOrCreateThreadWithGroupIdData:(NSData *)groupId
++ (nullable instancetype)threadWithGroupId:(NSData *)groupId transaction:(YapDatabaseReadTransaction *)transaction
 {
     OWSAssert(groupId.length > 0);
 
-    TSGroupThread *thread = [self fetchObjectWithUniqueID:[self threadIdFromGroupId:groupId]];
+    return [self fetchObjectWithUniqueID:[self threadIdFromGroupId:groupId] transaction:transaction];
+}
+
++ (instancetype)getOrCreateThreadWithGroupId:(NSData *)groupId
+                                 transaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    OWSAssert(groupId.length > 0);
+    OWSAssert(transaction);
+
+    TSGroupThread *thread = [self fetchObjectWithUniqueID:[self threadIdFromGroupId:groupId] transaction:transaction];
     if (!thread) {
-        thread = [[self alloc] initWithGroupIdData:groupId];
-        [thread save];
+        thread = [[self alloc] initWithGroupId:groupId];
+        [thread saveWithTransaction:transaction];
     }
+    return thread;
+}
+
++ (instancetype)getOrCreateThreadWithGroupId:(NSData *)groupId
+{
+    OWSAssert(groupId.length > 0);
+
+    __block TSGroupThread *thread;
+    [[self dbReadWriteConnection] readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        thread = [self getOrCreateThreadWithGroupId:groupId transaction:transaction];
+    }];
     return thread;
 }
 
@@ -74,6 +94,7 @@ NS_ASSUME_NONNULL_BEGIN
                                     transaction:(YapDatabaseReadWriteTransaction *)transaction {
     OWSAssert(groupModel);
     OWSAssert(groupModel.groupId.length > 0);
+    OWSAssert(transaction);
 
     TSGroupThread *thread =
         [self fetchObjectWithUniqueID:[self threadIdFromGroupId:groupModel.groupId] transaction:transaction];
@@ -162,12 +183,23 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)updateAvatarWithAttachmentStream:(TSAttachmentStream *)attachmentStream
 {
+    [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
+        [self updateAvatarWithAttachmentStream:attachmentStream transaction:transaction];
+    }];
+}
+
+- (void)updateAvatarWithAttachmentStream:(TSAttachmentStream *)attachmentStream
+                             transaction:(YapDatabaseReadWriteTransaction *)transaction
+{
+    OWSAssert(attachmentStream);
+    OWSAssert(transaction);
+
     self.groupModel.groupImage = [attachmentStream image];
-    [self save];
+    [self saveWithTransaction:transaction];
 
     // Avatars are stored directly in the database, so there's no need
     // to keep the attachment around after assigning the image.
-    [attachmentStream remove];
+    [attachmentStream removeWithTransaction:transaction];
 }
 
 @end

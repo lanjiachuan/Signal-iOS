@@ -2,10 +2,9 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
 #import <YapDatabase/YapDatabaseViewTransaction.h>
 
-extern NSString *const kNSNotificationName_DatabaseViewRegistrationComplete;
+extern NSString *const DatabaseViewRegistrationCompleteNotification;
 
 extern NSString *const TSInboxGroup;
 extern NSString *const TSArchiveGroup;
@@ -23,7 +22,10 @@ extern NSString *const TSSecondaryDevicesDatabaseViewExtensionName;
 
 - (instancetype)init NS_UNAVAILABLE;
 
+// This method can be called from any thread.
 + (BOOL)hasPendingViewRegistrations;
+
++ (void)registerCrossProcessNotifier;
 
 // This method must be called _AFTER_ registerThreadInteractionsDatabaseView.
 + (void)registerThreadDatabaseView;

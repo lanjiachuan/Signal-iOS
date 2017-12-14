@@ -74,17 +74,16 @@ NS_ASSUME_NONNULL_BEGIN
                                        }],
                        [OWSTableItem itemWithTitle:@"Send session reset"
                                        actionBlock:^{
-                                           [OWSSessionResetJob
-                                               runWithContactThread:thread
-                                                      messageSender:[Environment getCurrent].messageSender
-                                                     storageManager:[TSStorageManager sharedManager]];
+                                           [OWSSessionResetJob runWithContactThread:thread
+                                                                      messageSender:[Environment current].messageSender
+                                                                     storageManager:[TSStorageManager sharedManager]];
                                        }]
                    ]];
 }
 
 + (void)presentVerificationStatePickerForContactThread:(TSContactThread *)contactThread
 {
-    DDLogError(@"%@ Choosing verification state.", self.tag);
+    DDLogError(@"%@ Choosing verification state.", self.logTag);
 
     NSString *title = [NSString stringWithFormat:@"Choose verification state for %@", contactThread.name];
     UIAlertController *alertController =
@@ -130,18 +129,6 @@ NS_ASSUME_NONNULL_BEGIN
     [[UIApplication sharedApplication].frontmostViewController presentViewController:alertController
                                                                             animated:YES
                                                                           completion:nil];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

@@ -29,7 +29,7 @@ NS_ASSUME_NONNULL_BEGIN
     });
 }
 
-+ (void)auditAndCleanupAsync:(void (^_Nullable)())completion
++ (void)auditAndCleanupAsync:(void (^_Nullable)(void))completion
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [OWSOrphanedDataCleaner auditAndCleanup:YES completion:completion];
@@ -47,7 +47,7 @@ NS_ASSUME_NONNULL_BEGIN
 //   They can't be cleaned up - we don't want to delete the TSAttachmentStream or
 //   its corresponding message.  Better that the broken message shows up in the
 //   conversation view.
-+ (void)auditAndCleanup:(BOOL)shouldCleanup completion:(void (^_Nullable)())completion
++ (void)auditAndCleanup:(BOOL)shouldCleanup completion:(void (^_Nullable)(void))completion
 {
     NSSet<NSString *> *diskFilePaths = [self filePathsInAttachmentsFolder];
     long long totalFileSize = [self fileSizeOfFilePaths:diskFilePaths.allObjects];
@@ -91,12 +91,9 @@ NS_ASSUME_NONNULL_BEGIN
     [self printPaths:orphanDiskFilePaths.allObjects label:@"orphan disk file paths"];
     [self printPaths:missingAttachmentFilePaths.allObjects label:@"missing attachment file paths"];
 
-    NSMutableSet *threadIds = [NSMutableSet new];
+    __block NSMutableSet *threadIds;
     [databaseConnection readWithBlock:^(YapDatabaseReadTransaction *_Nonnull transaction) {
-        [transaction enumerateKeysInCollection:TSThread.collection
-                                    usingBlock:^(NSString *_Nonnull key, BOOL *_Nonnull stop) {
-                                        [threadIds addObject:key];
-                                    }];
+        threadIds = [[NSMutableSet alloc] initWithArray:[transaction allKeysInCollection:TSThread.collection]];
     }];
 
     NSMutableSet<NSString *> *orphanInteractionIds = [NSMutableSet new];
@@ -156,8 +153,9 @@ NS_ASSUME_NONNULL_BEGIN
         for (NSString *attachmentId in orphanAttachmentIds) {
             TSAttachment *attachment = [TSAttachment fetchObjectWithUniqueID:attachmentId transaction:transaction];
             if (!attachment) {
-                // This could just be a race condition, but it should be very unlikely.
-                OWSFail(@"Could not load attachment: %@", attachmentId);
+                // This can happen on launch since we sync contacts/groups, especially if you have a lot of attachments
+                // to churn through, it's likely it's been deleted since starting this job.
+                DDLogWarn(@"%@ Could not load attachment: %@", self.logTag, attachmentId);
                 continue;
             }
             if (![attachment isKindOfClass:[TSAttachmentStream class]]) {

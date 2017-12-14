@@ -7,8 +7,8 @@
 #import "DomainFrontingCountryViewController.h"
 #import "Environment.h"
 #import "OWSCountryMetadata.h"
+#import "OWSPreferences.h"
 #import "Pastelog.h"
-#import "PropertyListPreferences.h"
 #import "PushManager.h"
 #import "Signal-Swift.h"
 #import "TSAccountManager.h"
@@ -90,16 +90,16 @@ NS_ASSUME_NONNULL_BEGIN
     OWSTableSection *loggingSection = [OWSTableSection new];
     loggingSection.headerTitle = NSLocalizedString(@"LOGGING_SECTION", nil);
     [loggingSection addItem:[OWSTableItem switchItemWithText:NSLocalizedString(@"SETTINGS_ADVANCED_DEBUGLOG", @"")
-                                                        isOn:[PropertyListPreferences loggingIsEnabled]
+                                                        isOn:[OWSPreferences isLoggingEnabled]
                                                       target:weakSelf
                                                     selector:@selector(didToggleEnableLogSwitch:)]];
 
 
-    if ([PropertyListPreferences loggingIsEnabled]) {
+    if ([OWSPreferences isLoggingEnabled]) {
         [loggingSection
             addItem:[OWSTableItem actionItemWithText:NSLocalizedString(@"SETTINGS_ADVANCED_SUBMIT_DEBUGLOG", @"")
                                          actionBlock:^{
-                                             DDLogInfo(@"%@ Submitting debug logs", weakSelf.tag);
+                                             DDLogInfo(@"%@ Submitting debug logs", weakSelf.logTag);
                                              [DDLog flushLog];
                                              [Pastelog submitLogs];
                                          }]];
@@ -215,7 +215,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
 
     if (!countryMetadata) {
-        countryCode = [NSLocale.currentLocale objectForKey:NSLocaleCountryCode];
+        countryCode = [PhoneNumber defaultCountryCode];
         if (countryCode) {
             countryMetadata = [OWSCountryMetadata countryMetadataForCountryCode:countryCode];
         }
@@ -240,10 +240,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)syncPushTokens
 {
-    OWSSyncPushTokensJob *job =
-        [[OWSSyncPushTokensJob alloc] initWithPushManager:[PushManager sharedManager]
-                                           accountManager:[Environment getCurrent].accountManager
-                                              preferences:[Environment preferences]];
+    OWSSyncPushTokensJob *job = [[OWSSyncPushTokensJob alloc] initWithAccountManager:SignalApp.sharedApp.accountManager
+                                                                         preferences:[Environment preferences]];
     job.uploadOnlyIfStale = NO;
     [job run]
         .then(^{
@@ -263,8 +261,8 @@ NS_ASSUME_NONNULL_BEGIN
     } else {
         [[DebugLogger sharedLogger] enableFileLogging];
     }
-    
-    [PropertyListPreferences setLoggingEnabled:sender.isOn];
+
+    [OWSPreferences setIsLoggingEnabled:sender.isOn];
 
     [self updateTableContents];
 }
@@ -274,18 +272,6 @@ NS_ASSUME_NONNULL_BEGIN
     OWSSignalService.sharedInstance.isCensorshipCircumventionManuallyActivated = sender.isOn;
 
     [self updateTableContents];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

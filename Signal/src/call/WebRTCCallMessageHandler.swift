@@ -3,6 +3,8 @@
 //
 
 import Foundation
+import SignalServiceKit
+import SignalMessaging
 
 @objc(OWSWebRTCCallMessageHandler)
 class WebRTCCallMessageHandler: NSObject, OWSCallMessageHandler {
@@ -23,6 +25,10 @@ class WebRTCCallMessageHandler: NSObject, OWSCallMessageHandler {
         self.accountManager = accountManager
         self.callService = callService
         self.messageSender = messageSender
+
+        super.init()
+
+        SwiftSingletons.register(self)
     }
 
     // MARK: - Call Handlers

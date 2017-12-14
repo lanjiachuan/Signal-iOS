@@ -6,6 +6,7 @@
 #import "Environment.h"
 #import "OWSCountryMetadata.h"
 #import "OWSTableViewController.h"
+#import "RegistrationViewController.h"
 #import "Signal-Swift.h"
 #import "ThreadUtil.h"
 #import <AFNetworking/AFNetworking.h>
@@ -21,19 +22,13 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@interface TSAccountManager (Debug)
+
+- (void)resetForRegistration;
+
+@end
+
 @implementation DebugUIMisc
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
-}
 
 #pragma mark - Factory Methods
 
@@ -61,7 +56,37 @@ NS_ASSUME_NONNULL_BEGIN
                                      actionBlock:^{
                                          [DebugUIMisc clearHasDismissedOffers];
                                      }]];
+
+    [items addObject:[OWSTableItem
+                         itemWithTitle:@"Re-register"
+                           actionBlock:^{
+
+                               [OWSAlerts
+                                   showConfirmationAlertWithTitle:@"Re-register?"
+                                                          message:@"If you proceed, you will not lose any of your "
+                                                                  @"current messages, but your account will be "
+                                                                  @"deactivated until you complete re-registration."
+                                                     proceedTitle:@"Proceed"
+                                                    proceedAction:^(UIAlertAction *_Nonnull action) {
+                                                        [self reregister];
+                                                    }];
+                           }]];
+
     return [OWSTableSection sectionWithTitle:self.name items:items];
+}
+
+- (void)reregister
+{
+    DDLogInfo(@"%@ re-registering.", self.logTag);
+    [[TSAccountManager sharedInstance] resetForRegistration];
+    [[Environment current].preferences unsetRecordedAPNSTokens];
+
+    RegistrationViewController *viewController = [RegistrationViewController new];
+    OWSNavigationController *navigationController =
+        [[OWSNavigationController alloc] initWithRootViewController:viewController];
+    navigationController.navigationBarHidden = YES;
+
+    [UIApplication sharedApplication].delegate.window.rootViewController = navigationController;
 }
 
 + (void)setManualCensorshipCircumventionEnabled:(BOOL)isEnabled
@@ -73,7 +98,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
 
     if (!countryMetadata) {
-        countryCode = [NSLocale.currentLocale objectForKey:NSLocaleCountryCode];
+        countryCode = [PhoneNumber defaultCountryCode];
         if (countryCode) {
             countryMetadata = [OWSCountryMetadata countryMetadataForCountryCode:countryCode];
         }

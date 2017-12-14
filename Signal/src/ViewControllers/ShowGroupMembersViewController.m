@@ -3,16 +3,17 @@
 //
 
 #import "ShowGroupMembersViewController.h"
-#import "BlockListUIUtils.h"
-#import "ContactTableViewCell.h"
-#import "ContactsViewHelper.h"
 #import "Environment.h"
 #import "HomeViewController.h"
-#import "OWSContactsManager.h"
 #import "Signal-Swift.h"
-#import "UIUtil.h"
+#import "SignalApp.h"
 #import "ViewControllerUtils.h"
 #import <AddressBookUI/AddressBookUI.h>
+#import <SignalMessaging/BlockListUIUtils.h>
+#import <SignalMessaging/ContactTableViewCell.h>
+#import <SignalMessaging/ContactsViewHelper.h>
+#import <SignalMessaging/OWSContactsManager.h>
+#import <SignalMessaging/UIUtil.h>
 #import <SignalServiceKit/OWSBlockingManager.h>
 #import <SignalServiceKit/SignalAccount.h>
 #import <SignalServiceKit/TSGroupModel.h>
@@ -408,12 +409,12 @@ NS_ASSUME_NONNULL_BEGIN
 {
     OWSAssert(recipientId.length > 0);
 
-    [Environment messageIdentifier:recipientId withCompose:YES];
+    [SignalApp.sharedApp presentConversationForRecipientId:recipientId withCompose:YES];
 }
 
 - (void)callMember:(NSString *)recipientId
 {
-    [Environment callUserWithIdentifier:recipientId];
+    [SignalApp.sharedApp callRecipientId:recipientId];
 }
 
 - (void)showSafetyNumberView:(NSString *)recipientId
@@ -439,7 +440,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)didFinishEditingContact
 {
-    DDLogDebug(@"%@ %s", self.tag, __PRETTY_FUNCTION__);
+    DDLogDebug(@"%@ %s", self.logTag, __PRETTY_FUNCTION__);
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
@@ -448,7 +449,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)contactViewController:(CNContactViewController *)viewController
        didCompleteWithContact:(nullable CNContact *)contact
 {
-    DDLogDebug(@"%@ done editing contact.", self.tag);
+    DDLogDebug(@"%@ done editing contact.", self.logTag);
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
@@ -459,18 +460,6 @@ NS_ASSUME_NONNULL_BEGIN
     OWSAssert([NSThread isMainThread]);
 
     [self updateTableContents];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

@@ -4,6 +4,7 @@
 
 import UIKit
 import CallKit
+import SignalServiceKit
 
 /**
  * Requests actions from CallKit
@@ -16,15 +17,22 @@ import CallKit
 @available(iOS 10.0, *)
 final class CallKitCallManager: NSObject {
 
-    let TAG = "[CallKitCallManager]"
     let callController = CXCallController()
     static let kAnonymousCallHandlePrefix = "Signal:"
+
+    override required init() {
+        AssertIsOnMainThread()
+
+        super.init()
+
+        SwiftSingletons.register(self)
+    }
 
     // MARK: Actions
 
     func startCall(_ call: SignalCall) {
         var handle: CXHandle
-        if Environment.getCurrent().preferences.isCallKitPrivacyEnabled() {
+        if Environment.current().preferences.isCallKitPrivacyEnabled() {
             let callKitId = CallKitCallManager.kAnonymousCallHandlePrefix + call.localId.uuidString
             handle = CXHandle(type: .generic, value: callKitId)
             TSStorageManager.shared().setPhoneNumber(call.remotePhoneNumber, forCallKitId:callKitId)
@@ -77,9 +85,9 @@ final class CallKitCallManager: NSObject {
     private func requestTransaction(_ transaction: CXTransaction) {
         callController.request(transaction) { error in
             if let error = error {
-                Logger.error("\(self.TAG) Error requesting transaction: \(error)")
+                Logger.error("\(self.logTag) Error requesting transaction: \(error)")
             } else {
-                Logger.debug("\(self.TAG) Requested transaction successfully")
+                Logger.debug("\(self.logTag) Requested transaction successfully")
             }
         }
     }

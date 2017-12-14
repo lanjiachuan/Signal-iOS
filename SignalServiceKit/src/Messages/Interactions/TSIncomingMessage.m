@@ -3,16 +3,17 @@
 //
 
 #import "TSIncomingMessage.h"
+#import "NSNotificationCenter+OWS.h"
 #import "OWSDisappearingMessagesConfiguration.h"
 #import "OWSDisappearingMessagesJob.h"
+#import "OWSReadReceiptManager.h"
+#import "TSAttachmentPointer.h"
 #import "TSContactThread.h"
 #import "TSDatabaseSecondaryIndexes.h"
 #import "TSGroupThread.h"
 #import <YapDatabase/YapDatabaseConnection.h>
 
 NS_ASSUME_NONNULL_BEGIN
-
-NSString *const TSIncomingMessageWasReadOnThisDeviceNotification = @"TSIncomingMessageWasReadOnThisDeviceNotification";
 
 @interface TSIncomingMessage ()
 
@@ -75,39 +76,67 @@ NSString *const TSIncomingMessageWasReadOnThisDeviceNotification = @"TSIncomingM
     return self;
 }
 
-+ (nullable instancetype)findMessageWithAuthorId:(NSString *)authorId timestamp:(uint64_t)timestamp
++ (nullable instancetype)findMessageWithAuthorId:(NSString *)authorId
+                                       timestamp:(uint64_t)timestamp
+                                     transaction:(YapDatabaseReadWriteTransaction *)transaction
 {
+    OWSAssert(transaction);
+
     __block TSIncomingMessage *foundMessage;
-    [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-        // In theory we could build a new secondaryIndex for (authorId,timestamp), but in practice there should
-        // be *very* few (millisecond) timestamps with multiple authors.
-        [TSDatabaseSecondaryIndexes
-            enumerateMessagesWithTimestamp:timestamp
-                                 withBlock:^(NSString *collection, NSString *key, BOOL *stop) {
-                                     TSInteraction *interaction =
-                                         [TSInteraction fetchObjectWithUniqueID:key transaction:transaction];
-                                     if ([interaction isKindOfClass:[TSIncomingMessage class]]) {
-                                         TSIncomingMessage *message = (TSIncomingMessage *)interaction;
+    // In theory we could build a new secondaryIndex for (authorId,timestamp), but in practice there should
+    // be *very* few (millisecond) timestamps with multiple authors.
+    [TSDatabaseSecondaryIndexes
+        enumerateMessagesWithTimestamp:timestamp
+                             withBlock:^(NSString *collection, NSString *key, BOOL *stop) {
+                                 TSInteraction *interaction =
+                                     [TSInteraction fetchObjectWithUniqueID:key transaction:transaction];
+                                 if ([interaction isKindOfClass:[TSIncomingMessage class]]) {
+                                     TSIncomingMessage *message = (TSIncomingMessage *)interaction;
 
-                                         // Only groupthread sets authorId, thus this crappy code.
-                                         // TODO ALL incoming messages should have an authorId.
-                                         NSString *messageAuthorId;
-                                         if (message.authorId) { // Group Thread
-                                             messageAuthorId = message.authorId;
-                                         } else { // Contact Thread
-                                             messageAuthorId =
-                                                 [TSContactThread contactIdFromThreadId:message.uniqueThreadId];
-                                         }
+                                     NSString *messageAuthorId = message.messageAuthorId;
+                                     OWSAssert(messageAuthorId.length > 0);
 
-                                         if ([messageAuthorId isEqualToString:authorId]) {
-                                             foundMessage = message;
-                                         }
+                                     if ([messageAuthorId isEqualToString:authorId]) {
+                                         foundMessage = message;
                                      }
                                  }
-                          usingTransaction:transaction];
-    }];
+                             }
+                      usingTransaction:transaction];
 
     return foundMessage;
+}
+
+- (NSString *)messageAuthorId
+{
+    // authorId isn't set on all legacy messages, so we take
+    // extra measures to ensure we obtain a valid value.
+    NSString *messageAuthorId;
+    if (self.authorId) {
+        // Group Thread
+        messageAuthorId = self.authorId;
+    } else {
+        // Contact Thread
+        messageAuthorId = [TSContactThread contactIdFromThreadId:self.uniqueThreadId];
+    }
+    OWSAssert(messageAuthorId.length > 0);
+    return messageAuthorId;
+}
+
+- (OWSInteractionType)interactionType
+{
+    return OWSInteractionType_IncomingMessage;
+}
+
+- (BOOL)shouldStartExpireTimer:(YapDatabaseReadTransaction *)transaction
+{
+    for (NSString *attachmentId in self.attachmentIds) {
+        TSAttachment *_Nullable attachment =
+            [TSAttachment fetchObjectWithUniqueID:attachmentId transaction:transaction];
+        if ([attachment isKindOfClass:[TSAttachmentPointer class]]) {
+            return NO;
+        }
+    }
+    return self.isExpiringMessage;
 }
 
 #pragma mark - OWSReadTracking
@@ -127,7 +156,8 @@ NSString *const TSIncomingMessageWasReadOnThisDeviceNotification = @"TSIncomingM
         return;
     }
 
-    DDLogDebug(@"%@ marking as read uniqueId: %@ which has timestamp: %llu", self.tag, self.uniqueId, self.timestamp);
+    DDLogDebug(
+        @"%@ marking as read uniqueId: %@ which has timestamp: %llu", self.logTag, self.uniqueId, self.timestamp);
     _read = YES;
     [self saveWithTransaction:transaction];
     [self touchThreadWithTransaction:transaction];
@@ -137,25 +167,8 @@ NSString *const TSIncomingMessageWasReadOnThisDeviceNotification = @"TSIncomingM
     }
 
     if (sendReadReceipt) {
-        // Notification must happen outside of the transaction, else we'll likely crash when the notification receiver
-        // tries to do anything with the DB.
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [[NSNotificationCenter defaultCenter] postNotificationName:TSIncomingMessageWasReadOnThisDeviceNotification
-                                                                object:self];
-        });
+        [OWSReadReceiptManager.sharedManager messageWasReadLocally:self];
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

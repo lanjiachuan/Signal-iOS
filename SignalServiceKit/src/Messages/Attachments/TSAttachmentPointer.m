@@ -28,12 +28,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithServerId:(UInt64)serverId
                              key:(NSData *)key
                           digest:(nullable NSData *)digest
+                       byteCount:(UInt32)byteCount
                      contentType:(NSString *)contentType
                            relay:(NSString *)relay
                   sourceFilename:(nullable NSString *)sourceFilename
                   attachmentType:(TSAttachmentType)attachmentType
 {
-    self = [super initWithServerId:serverId encryptionKey:key contentType:contentType sourceFilename:sourceFilename];
+    self = [super initWithServerId:serverId
+                     encryptionKey:key
+                         byteCount:byteCount
+                       contentType:contentType
+                    sourceFilename:sourceFilename];
     if (!self) {
         return self;
     }
@@ -61,21 +66,9 @@ NS_ASSUME_NONNULL_BEGIN
             // For legacy instances, try to parse the serverId from the uniqueId.
             self.serverId = [self.uniqueId integerValue];
         } else {
-            DDLogError(@"%@ invalid legacy attachment uniqueId: %@.", self.tag, self.uniqueId);
+            DDLogError(@"%@ invalid legacy attachment uniqueId: %@.", self.logTag, self.uniqueId);
         }
     }
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

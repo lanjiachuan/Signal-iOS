@@ -5,8 +5,9 @@
 #import "PrivacySettingsTableViewController.h"
 #import "BlockListViewController.h"
 #import "Environment.h"
-#import "PropertyListPreferences.h"
+#import "OWSPreferences.h"
 #import "Signal-Swift.h"
+#import <SignalServiceKit/OWSReadReceiptManager.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -44,6 +45,17 @@ NS_ASSUME_NONNULL_BEGIN
                                                                    [weakSelf showBlocklist];
                                                                }],
                                   ]]];
+
+    OWSTableSection *readReceiptsSection = [OWSTableSection new];
+    readReceiptsSection.footerTitle = NSLocalizedString(
+        @"SETTINGS_READ_RECEIPTS_SECTION_FOOTER", @"An explanation of the 'read receipts' setting.");
+    [readReceiptsSection
+        addItem:[OWSTableItem switchItemWithText:NSLocalizedString(@"SETTINGS_READ_RECEIPT",
+                                                     @"Label for the 'read receipts' setting.")
+                                            isOn:[OWSReadReceiptManager.sharedManager areReadReceiptsEnabled]
+                                          target:weakSelf
+                                        selector:@selector(didToggleReadReceiptsSwitch:)]];
+    [contents addSection:readReceiptsSection];
 
     OWSTableSection *screenSecuritySection = [OWSTableSection new];
     screenSecuritySection.headerTitle = NSLocalizedString(@"SETTINGS_SECURITY_TITLE", @"Section header");
@@ -132,28 +144,35 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)didToggleScreenSecuritySwitch:(UISwitch *)sender
 {
     BOOL enabled = sender.isOn;
-    DDLogInfo(@"%@ toggled screen security: %@", self.tag, enabled ? @"ON" : @"OFF");
+    DDLogInfo(@"%@ toggled screen security: %@", self.logTag, enabled ? @"ON" : @"OFF");
     [Environment.preferences setScreenSecurity:enabled];
+}
+
+- (void)didToggleReadReceiptsSwitch:(UISwitch *)sender
+{
+    BOOL enabled = sender.isOn;
+    DDLogInfo(@"%@ toggled areReadReceiptsEnabled: %@", self.logTag, enabled ? @"ON" : @"OFF");
+    [OWSReadReceiptManager.sharedManager setAreReadReceiptsEnabled:enabled];
 }
 
 - (void)didToggleCallsHideIPAddressSwitch:(UISwitch *)sender
 {
     BOOL enabled = sender.isOn;
-    DDLogInfo(@"%@ toggled callsHideIPAddress: %@", self.tag, enabled ? @"ON" : @"OFF");
+    DDLogInfo(@"%@ toggled callsHideIPAddress: %@", self.logTag, enabled ? @"ON" : @"OFF");
     [Environment.preferences setDoCallsHideIPAddress:enabled];
 }
 
 - (void)didToggleEnableCallKitSwitch:(UISwitch *)sender {
-    DDLogInfo(@"%@ user toggled call kit preference: %@", self.tag, (sender.isOn ? @"ON" : @"OFF"));
-    [[Environment getCurrent].preferences setIsCallKitEnabled:sender.isOn];
+    DDLogInfo(@"%@ user toggled call kit preference: %@", self.logTag, (sender.isOn ? @"ON" : @"OFF"));
+    [[Environment current].preferences setIsCallKitEnabled:sender.isOn];
     // rebuild callUIAdapter since CallKit vs not changed.
-    [[Environment getCurrent].callService createCallUIAdapter];
+    [SignalApp.sharedApp.callService createCallUIAdapter];
     [self updateTableContents];
 }
 
 - (void)didToggleEnableCallKitPrivacySwitch:(UISwitch *)sender {
-    DDLogInfo(@"%@ user toggled call kit privacy preference: %@", self.tag, (sender.isOn ? @"ON" : @"OFF"));
-    [[Environment getCurrent].preferences setIsCallKitPrivacyEnabled:!sender.isOn];
+    DDLogInfo(@"%@ user toggled call kit privacy preference: %@", self.logTag, (sender.isOn ? @"ON" : @"OFF"));
+    [[Environment current].preferences setIsCallKitPrivacyEnabled:!sender.isOn];
 }
 
 #pragma mark - Log util
@@ -165,7 +184,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)tag
 {
-    return self.class.tag;
+    return self.class.logTag;
 }
 
 @end

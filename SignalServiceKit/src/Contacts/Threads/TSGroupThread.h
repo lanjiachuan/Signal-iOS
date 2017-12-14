@@ -8,6 +8,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @class TSAttachmentStream;
+@class YapDatabaseReadWriteTransaction;
 
 @interface TSGroupThread : TSThread
 
@@ -17,9 +18,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)getOrCreateThreadWithGroupModel:(TSGroupModel *)groupModel
                                     transaction:(YapDatabaseReadWriteTransaction *)transaction;
 
-+ (instancetype)getOrCreateThreadWithGroupIdData:(NSData *)groupId;
++ (instancetype)getOrCreateThreadWithGroupId:(NSData *)groupId;
++ (instancetype)getOrCreateThreadWithGroupId:(NSData *)groupId
+                                 transaction:(YapDatabaseReadWriteTransaction *)transaction;
 
-+ (instancetype)threadWithGroupModel:(TSGroupModel *)groupModel transaction:(YapDatabaseReadTransaction *)transaction;
++ (nullable instancetype)threadWithGroupId:(NSData *)groupId transaction:(YapDatabaseReadTransaction *)transaction;
 
 + (NSString *)threadIdFromGroupId:(NSData *)groupId;
 
@@ -27,6 +30,8 @@ NS_ASSUME_NONNULL_BEGIN
 + (NSArray<TSGroupThread *> *)groupThreadsWithRecipientId:(NSString *)recipientId;
 
 - (void)updateAvatarWithAttachmentStream:(TSAttachmentStream *)attachmentStream;
+- (void)updateAvatarWithAttachmentStream:(TSAttachmentStream *)attachmentStream
+                             transaction:(YapDatabaseReadWriteTransaction *)transaction;
 
 @end
 

@@ -27,12 +27,18 @@ An Objective-C library for communicating with the Signal messaging service.
   s.requires_arc = true
   s.source_files = 'SignalServiceKit/src/**/*.{h,m,mm}'
 
-  s.resources = ['SignalServiceKit/src/Security/PinningCertificate/textsecure.cer',
-                 'SignalServiceKit/src/Security/PinningCertificate/GIAG2.crt']
+  # We want to use modules to avoid clobbering CocoaLumberjack macros defined
+  # by other OWS modules which *also* import CocoaLumberjack. But because we
+  # also use Objective-C++, modules are disabled unless we explicitly enable
+  # them
+  s.compiler_flags = "-fcxx-modules"
+
   s.prefix_header_file = 'SignalServiceKit/src/TSPrefix.h'
   s.xcconfig = { 'OTHER_CFLAGS' => '$(inherited) -DSQLITE_HAS_CODEC' }
 
-  s.dependency '25519'
+  s.resources = ["SignalServiceKit/Resources/Certificates/*"]
+
+  s.dependency 'Curve25519Kit'
   s.dependency 'CocoaLumberjack'
   s.dependency 'AFNetworking'
   s.dependency 'AxolotlKit'
@@ -40,7 +46,7 @@ An Objective-C library for communicating with the Signal messaging service.
   s.dependency 'YapDatabase/SQLCipher', '~> 2.9.3'
   s.dependency 'SocketRocket'
   s.dependency 'libPhoneNumber-iOS'
-  s.dependency 'OpenSSL'
+  s.dependency 'GRKOpenSSLFramework'
   s.dependency 'SAMKeychain'
   s.dependency 'TwistedOakCollapsingFutures'
   s.dependency 'Reachability'

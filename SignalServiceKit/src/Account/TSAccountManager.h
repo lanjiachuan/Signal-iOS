@@ -2,14 +2,13 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
 #import "TSConstants.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 extern NSString *const TSRegistrationErrorDomain;
 extern NSString *const TSRegistrationErrorUserInfoHTTPStatus;
-extern NSString *const kNSNotificationName_RegistrationStateDidChange;
+extern NSString *const RegistrationStateDidChangeNotification;
 extern NSString *const kNSNotificationName_LocalNumberDidChange;
 
 @class TSNetworkManager;
@@ -44,6 +43,22 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 - (nullable NSString *)localNumber;
 
 /**
+ *  Symmetric key that's used to encrypt message payloads from the server,
+ *
+ *  @return signaling key
+ */
++ (nullable NSString *)signalingKey;
+- (nullable NSString *)signalingKey;
+
+/**
+ *  The server auth token allows the Signal client to connect to the Signal server
+ *
+ *  @return server authentication token
+ */
++ (nullable NSString *)serverAuthToken;
+- (nullable NSString *)serverAuthToken;
+
+/**
  *  The registration ID is unique to an installation of TextSecure, it allows to know if the app was reinstalled
  *
  *  @return registrationID;
@@ -54,17 +69,26 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
 #pragma mark - Register with phone number
 
 + (void)registerWithPhoneNumber:(NSString *)phoneNumber
-                        success:(void (^)())successBlock
+                        success:(void (^)(void))successBlock
                         failure:(void (^)(NSError *error))failureBlock
                 smsVerification:(BOOL)isSMS;
 
-+ (void)rerequestSMSWithSuccess:(void (^)())successBlock failure:(void (^)(NSError *error))failureBlock;
++ (void)rerequestSMSWithSuccess:(void (^)(void))successBlock failure:(void (^)(NSError *error))failureBlock;
 
-+ (void)rerequestVoiceWithSuccess:(void (^)())successBlock failure:(void (^)(NSError *error))failureBlock;
++ (void)rerequestVoiceWithSuccess:(void (^)(void))successBlock failure:(void (^)(NSError *error))failureBlock;
 
 - (void)verifyAccountWithCode:(NSString *)verificationCode
-                      success:(void (^)())successBlock
+                      success:(void (^)(void))successBlock
                       failure:(void (^)(NSError *error))failureBlock;
+
+- (void)registerForManualMessageFetchingWithSuccess:(void (^)(void))successBlock
+                                            failure:(void (^)(NSError *error))failureBlock;
+
+// Called once registration is complete - meaning the following have succeeded:
+// - obtained signal server credentials
+// - uploaded pre-keys
+// - uploaded push tokens
+- (void)didRegister;
 
 #if TARGET_OS_IPHONE
 
@@ -75,13 +99,13 @@ extern NSString *const kNSNotificationName_LocalNumberDidChange;
  */
 - (void)registerForPushNotificationsWithPushToken:(NSString *)pushToken
                                         voipToken:(NSString *)voipToken
-                                          success:(void (^)())successHandler
+                                          success:(void (^)(void))successHandler
                                           failure:(void (^)(NSError *error))failureHandler
     NS_SWIFT_NAME(registerForPushNotifications(pushToken:voipToken:success:failure:));
 
 #endif
 
-+ (void)unregisterTextSecureWithSuccess:(void (^)())success failure:(void (^)(NSError *error))failureBlock;
++ (void)unregisterTextSecureWithSuccess:(void (^)(void))success failure:(void (^)(NSError *error))failureBlock;
 
 @end
 

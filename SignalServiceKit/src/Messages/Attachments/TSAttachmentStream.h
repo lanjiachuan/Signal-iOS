@@ -2,9 +2,12 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
+#import "DataSource.h"
 #import "TSAttachment.h"
+
 #if TARGET_OS_IPHONE
 #import <UIKit/UIKit.h>
+
 #endif
 
 NS_ASSUME_NONNULL_BEGIN
@@ -16,7 +19,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)init NS_UNAVAILABLE;
 - (instancetype)initWithContentType:(NSString *)contentType
+                          byteCount:(UInt32)byteCount
                      sourceFilename:(nullable NSString *)sourceFilename NS_DESIGNATED_INITIALIZER;
+
 - (instancetype)initWithPointer:(TSAttachmentPointer *)pointer NS_DESIGNATED_INITIALIZER;
 - (nullable instancetype)initWithCoder:(NSCoder *)coder NS_DESIGNATED_INITIALIZER;
 
@@ -43,15 +48,16 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (nullable NSData *)readDataFromFileWithError:(NSError **)error;
 - (BOOL)writeData:(NSData *)data error:(NSError **)error;
+- (BOOL)writeDataSource:(DataSource *)dataSource;
 
 + (void)deleteAttachments;
 + (NSString *)attachmentsFolder;
 
-- (CGSize)imageSizeWithTransaction:(YapDatabaseReadWriteTransaction *)transaction;
-- (CGSize)imageSizeWithoutTransaction;
+- (CGSize)imageSize;
 
-- (CGFloat)audioDurationSecondsWithTransaction:(YapDatabaseReadWriteTransaction *)transaction;
-- (CGFloat)audioDurationSecondsWithoutTransaction;
+- (CGFloat)audioDurationSeconds;
+
++ (void)migrateToSharedData;
 
 @end
 

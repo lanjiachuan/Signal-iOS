@@ -9,16 +9,13 @@
 
 @interface HomeViewController : OWSViewController
 
-// TODO: Remove this property.
-@property (nonatomic) BOOL newlyRegisteredUser;
-
 - (void)presentThread:(TSThread *)thread
     keyboardOnViewAppearing:(BOOL)keyboardOnViewAppearing
         callOnViewAppearing:(BOOL)callOnViewAppearing;
 
 - (void)updateInboxCountLabel;
 
-- (void)composeNew;
+- (void)showNewConversationView;
 
 - (void)presentTopLevelModalViewController:(UIViewController *)viewController
                           animateDismissal:(BOOL)animateDismissal

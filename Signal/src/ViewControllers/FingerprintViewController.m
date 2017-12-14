@@ -10,9 +10,9 @@
 #import "Signal-Swift.h"
 #import "UIColor+OWS.h"
 #import "UIFont+OWS.h"
-#import "UIUtil.h"
 #import "UIView+OWS.h"
-#import <SignalServiceKit/NSDate+millisecondTimeStamp.h>
+#import <SignalMessaging/UIUtil.h>
+#import <SignalServiceKit/NSDate+OWS.h>
 #import <SignalServiceKit/OWSError.h>
 #import <SignalServiceKit/OWSFingerprint.h>
 #import <SignalServiceKit/OWSFingerprintBuilder.h>
@@ -23,7 +23,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef void (^CustomLayoutBlock)();
+typedef void (^CustomLayoutBlock)(void);
 
 @interface CustomLayoutView : UIView
 
@@ -144,7 +144,7 @@ typedef void (^CustomLayoutBlock)();
 
     self.recipientId = recipientId;
 
-    OWSContactsManager *contactsManager = [Environment getCurrent].contactsManager;
+    OWSContactsManager *contactsManager = [Environment current].contactsManager;
     self.contactName = [contactsManager displayNameForPhoneIdentifier:recipientId];
 
     OWSRecipientIdentity *_Nullable recipientIdentity =
@@ -283,8 +283,7 @@ typedef void (^CustomLayoutBlock)();
         layer.path = [UIBezierPath bezierPathWithOvalInRect:circle].CGPath;
     }];
     [fingerprintView addSubview:fingerprintCircle];
-    [fingerprintCircle autoPinWidthToSuperview];
-    [fingerprintCircle autoPinHeightToSuperview];
+    [fingerprintCircle autoPinToSuperviewEdges];
 
     UIImageView *fingerprintImageView = [UIImageView new];
     fingerprintImageView.image = self.fingerprint.image;
@@ -403,7 +402,7 @@ typedef void (^CustomLayoutBlock)();
 
 - (void)showSharingActivityWithCompletion:(nullable void (^)(void))completionHandler
 {
-    DDLogDebug(@"%@ Sharing safety numbers", self.tag);
+    DDLogDebug(@"%@ Sharing safety numbers", self.logTag);
 
     OWSCompareSafetyNumbersActivity *compareActivity = [[OWSCompareSafetyNumbersActivity alloc] initWithDelegate:self];
 
@@ -453,7 +452,7 @@ typedef void (^CustomLayoutBlock)();
                                                  identityKey:self.identityKey
                                                  recipientId:self.recipientId
                                                  contactName:self.contactName
-                                                         tag:self.tag];
+                                                         tag:self.logTag];
 }
 
 - (void)showVerificationFailedWithError:(NSError *)error
@@ -465,7 +464,7 @@ typedef void (^CustomLayoutBlock)();
                                                        cancelBlock:^{
                                                            // Do nothing.
                                                        }
-                                                               tag:self.tag];
+                                                               tag:self.logTag];
 }
 
 #pragma mark - Action
@@ -490,7 +489,7 @@ typedef void (^CustomLayoutBlock)();
 - (void)learnMoreButtonTapped:(UIGestureRecognizer *)gestureRecognizer
 {
     if (gestureRecognizer.state == UIGestureRecognizerStateRecognized) {
-        NSString *learnMoreURL = @"https://support.whispersystems.org/hc/en-us/articles/"
+        NSString *learnMoreURL = @"https://support.signal.org/hc/en-us/articles/"
                                  @"213134107";
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:learnMoreURL]];
     }
@@ -534,18 +533,6 @@ typedef void (^CustomLayoutBlock)();
     OWSAssert([NSThread isMainThread]);
 
     [self updateVerificationStateLabel];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

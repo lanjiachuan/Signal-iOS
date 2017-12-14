@@ -2,13 +2,13 @@
 //  Copyright (c) 2017 Open Whisper Systems. All rights reserved.
 //
 
-#import <JSQMessagesViewController/JSQMessagesViewController.h>
+#import "OWSViewController.h"
+
+NS_ASSUME_NONNULL_BEGIN
 
 @class TSThread;
 
-extern NSString *const ConversationViewControllerDidAppearNotification;
-
-@interface ConversationViewController : JSQMessagesViewController
+@interface ConversationViewController : OWSViewController
 
 @property (nonatomic, readonly) TSThread *thread;
 
@@ -24,3 +24,5 @@ extern NSString *const ConversationViewControllerDidAppearNotification;
 - (void)popped;
 
 @end
+
+NS_ASSUME_NONNULL_END

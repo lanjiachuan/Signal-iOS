@@ -5,7 +5,7 @@
 #import "RegistrationViewController.h"
 #import "CodeVerificationViewController.h"
 #import "CountryCodeViewController.h"
-#import "Environment.h"
+#import "NSString+OWS.h"
 #import "PhoneNumber.h"
 #import "PhoneNumberUtil.h"
 #import "Signal-Swift.h"
@@ -13,6 +13,7 @@
 #import "UIView+OWS.h"
 #import "ViewControllerUtils.h"
 #import <SAMKeychain/SAMKeychain.h>
+#import <SignalMessaging/Environment.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -32,7 +33,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
 @property (nonatomic) UILabel *countryCodeLabel;
 @property (nonatomic) UITextField *phoneNumberTextField;
 @property (nonatomic) UILabel *examplePhoneNumberLabel;
-@property (nonatomic) UIButton *activateButton;
+@property (nonatomic) OWSFlatButton *activateButton;
 @property (nonatomic) UIActivityIndicatorView *spinnerView;
 
 @end
@@ -49,7 +50,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
 
     // Do any additional setup after loading the view.
     [self populateDefaultCountryNameAndCode];
-    [[Environment getCurrent] setSignUpFlowNavigationController:self.navigationController];
+    [SignalApp.sharedApp setSignUpFlowNavigationController:self.navigationController];
 }
 
 - (void)viewDidLoad {
@@ -60,41 +61,46 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
 
 - (void)createViews
 {
-    self.view.backgroundColor = [UIColor ows_signalBrandBlueColor];
+    self.view.backgroundColor = [UIColor whiteColor];
     self.view.userInteractionEnabled = YES;
     [self.view
         addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(backgroundTapped:)]];
 
-    UIView *header = [UIView new];
-    header.backgroundColor = [UIColor ows_signalBrandBlueColor];
-    [self.view addSubview:header];
-    [header autoPinToTopLayoutGuideOfViewController:self withInset:0];
-    [header autoPinWidthToSuperview];
+    UIView *headerWrapper = [UIView containerView];
+    [self.view addSubview:headerWrapper];
+    headerWrapper.backgroundColor = UIColor.ows_signalBrandBlueColor;
+    
+    UIView *headerContent = [UIView new];
+    [headerWrapper addSubview:headerContent];
+    [headerWrapper autoPinEdgesToSuperviewEdgesWithInsets:UIEdgeInsetsZero excludingEdge:ALEdgeBottom];
+    [headerContent autoPinEdgeToSuperviewEdge:ALEdgeBottom];
+    [headerContent autoPinToTopLayoutGuideOfViewController:self withInset:0];
+    [headerContent autoPinWidthToSuperview];
 
     UILabel *headerLabel = [UILabel new];
     headerLabel.text = NSLocalizedString(@"REGISTRATION_TITLE_LABEL", @"");
     headerLabel.textColor = [UIColor whiteColor];
     headerLabel.font = [UIFont ows_mediumFontWithSize:ScaleFromIPhone5To7Plus(20.f, 24.f)];
-    [header addSubview:headerLabel];
+    [headerContent addSubview:headerLabel];
     [headerLabel autoHCenterInSuperview];
     [headerLabel autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:14.f];
 
     CGFloat screenHeight = MAX([UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height);
     if (screenHeight < 568) {
         // iPhone 4s or smaller.
-        [header autoSetDimension:ALDimensionHeight toSize:20];
+        [headerContent autoSetDimension:ALDimensionHeight toSize:20];
         headerLabel.hidden = YES;
     } else if (screenHeight < 667) {
         // iPhone 5 or smaller.
-        [header autoSetDimension:ALDimensionHeight toSize:80];
+        [headerContent autoSetDimension:ALDimensionHeight toSize:80];
     } else {
-        [header autoSetDimension:ALDimensionHeight toSize:220];
+        [headerContent autoSetDimension:ALDimensionHeight toSize:220];
 
         UIImage *logo = [UIImage imageNamed:@"logoSignal"];
         OWSAssert(logo);
         UIImageView *logoView = [UIImageView new];
         logoView.image = logo;
-        [header addSubview:logoView];
+        [headerContent addSubview:logoView];
         [logoView autoHCenterInSuperview];
         [logoView autoPinEdge:ALEdgeBottom toEdge:ALEdgeTop ofView:headerLabel withOffset:-14.f];
     }
@@ -111,7 +117,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     [self.view addSubview:contentView];
     [contentView autoPinToBottomLayoutGuideOfViewController:self withInset:0];
     [contentView autoPinWidthToSuperview];
-    [contentView autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:header];
+    [contentView autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:headerContent];
 
     // Country
     UIView *countryRow = [UIView containerView];
@@ -130,7 +136,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     countryNameLabel.font = [UIFont ows_mediumFontWithSize:fontSizePoints];
     [countryRow addSubview:countryNameLabel];
     [countryNameLabel autoVCenterInSuperview];
-    [countryNameLabel autoPinLeadingToSuperView];
+    [countryNameLabel autoPinLeadingToSuperview];
 
     UILabel *countryCodeLabel = [UILabel new];
     self.countryCodeLabel = countryCodeLabel;
@@ -138,7 +144,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     countryCodeLabel.font = [UIFont ows_mediumFontWithSize:fontSizePoints + 2.f];
     [countryRow addSubview:countryCodeLabel];
     [countryCodeLabel autoVCenterInSuperview];
-    [countryCodeLabel autoPinTrailingToSuperView];
+    [countryCodeLabel autoPinTrailingToSuperview];
 
     UIView *separatorView1 = [UIView new];
     separatorView1.backgroundColor = [UIColor colorWithWhite:0.75f alpha:1.f];
@@ -161,7 +167,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     phoneNumberLabel.font = [UIFont ows_mediumFontWithSize:fontSizePoints];
     [phoneNumberRow addSubview:phoneNumberLabel];
     [phoneNumberLabel autoVCenterInSuperview];
-    [phoneNumberLabel autoPinLeadingToSuperView];
+    [phoneNumberLabel autoPinLeadingToSuperview];
 
     UITextField *phoneNumberTextField = [UITextField new];
     phoneNumberTextField.textAlignment = NSTextAlignmentRight;
@@ -174,14 +180,14 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     phoneNumberTextField.font = [UIFont ows_mediumFontWithSize:fontSizePoints + 2];
     [phoneNumberRow addSubview:phoneNumberTextField];
     [phoneNumberTextField autoVCenterInSuperview];
-    [phoneNumberTextField autoPinTrailingToSuperView];
+    [phoneNumberTextField autoPinTrailingToSuperview];
 
     UILabel *examplePhoneNumberLabel = [UILabel new];
     self.examplePhoneNumberLabel = examplePhoneNumberLabel;
     examplePhoneNumberLabel.font = [UIFont ows_regularFontWithSize:fontSizePoints - 2.f];
     examplePhoneNumberLabel.textColor = [UIColor colorWithWhite:0.5f alpha:1.f];
     [contentView addSubview:examplePhoneNumberLabel];
-    [examplePhoneNumberLabel autoPinTrailingToSuperView];
+    [examplePhoneNumberLabel autoPinTrailingToSuperview];
     [examplePhoneNumberLabel autoPinEdge:ALEdgeTop
                                   toEdge:ALEdgeBottom
                                   ofView:phoneNumberTextField
@@ -198,22 +204,20 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     [separatorView2 autoSetDimension:ALDimensionHeight toSize:kSeparatorHeight];
 
     // Activate Button
-    UIButton *activateButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    const CGFloat kActivateButtonHeight = 47.f;
+    // NOTE: We use ows_signalBrandBlueColor instead of ows_materialBlueColor
+    //       throughout the onboarding flow to be consistent with the headers.
+    OWSFlatButton *activateButton = [OWSFlatButton buttonWithTitle:NSLocalizedString(@"REGISTRATION_VERIFY_DEVICE", @"")
+                                                              font:[OWSFlatButton fontForHeight:kActivateButtonHeight]
+                                                        titleColor:[UIColor whiteColor]
+                                                   backgroundColor:[UIColor ows_signalBrandBlueColor]
+                                                            target:self
+                                                          selector:@selector(sendCodeAction)];
     self.activateButton = activateButton;
-    activateButton.backgroundColor = [UIColor ows_signalBrandBlueColor];
-    [activateButton setTitle:NSLocalizedString(@"REGISTRATION_VERIFY_DEVICE", @"") forState:UIControlStateNormal];
-    [activateButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    activateButton.titleLabel.font = [UIFont ows_boldFontWithSize:fontSizePoints];
-    [activateButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentCenter];
-    [activateButton setContentVerticalAlignment:UIControlContentVerticalAlignmentCenter];
     [contentView addSubview:activateButton];
     [activateButton autoPinLeadingAndTrailingToSuperview];
-    [activateButton autoPinEdge:ALEdgeTop
-                         toEdge:ALEdgeBottom
-                         ofView:separatorView2
-                     withOffset:ScaleFromIPhone5To7Plus(12.f, 15.f)];
-    [activateButton autoSetDimension:ALDimensionHeight toSize:47.f];
-    [activateButton addTarget:self action:@selector(sendCodeAction) forControlEvents:UIControlEventTouchUpInside];
+    [activateButton autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:separatorView2 withOffset:15];
+    [activateButton autoSetDimension:ALDimensionHeight toSize:kActivateButtonHeight];
 
     UIActivityIndicatorView *spinnerView =
         [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
@@ -222,24 +226,8 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     [spinnerView autoVCenterInSuperview];
     [spinnerView autoSetDimension:ALDimensionWidth toSize:20.f];
     [spinnerView autoSetDimension:ALDimensionHeight toSize:20.f];
-    [spinnerView autoPinTrailingToSuperViewWithMargin:20.f];
+    [spinnerView autoPinTrailingToSuperviewWithMargin:20.f];
     [spinnerView stopAnimating];
-
-    // Existing Account Button
-    UIButton *existingAccountButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [existingAccountButton setTitle:NSLocalizedString(@"ALREADY_HAVE_ACCOUNT_BUTTON", @"registration button text")
-                           forState:UIControlStateNormal];
-    [existingAccountButton setTitleColor:[UIColor ows_materialBlueColor] forState:UIControlStateNormal];
-    existingAccountButton.titleLabel.font = [UIFont ows_mediumFontWithSize:fontSizePoints - 2.f];
-    [existingAccountButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentCenter];
-    [existingAccountButton setContentVerticalAlignment:UIControlContentVerticalAlignmentCenter];
-    [contentView addSubview:existingAccountButton];
-    [existingAccountButton autoPinLeadingAndTrailingToSuperview];
-    [existingAccountButton autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:activateButton withOffset:9.f];
-    [existingAccountButton autoSetDimension:ALDimensionHeight toSize:36.f];
-    [existingAccountButton addTarget:self
-                              action:@selector(didTapExistingUserButton:)
-                    forControlEvents:UIControlEventTouchUpInside];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -253,8 +241,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
 #pragma mark - Country
 
 - (void)populateDefaultCountryNameAndCode {
-    NSLocale *locale      = NSLocale.currentLocale;
-    NSString *countryCode = [locale objectForKey:NSLocaleCountryCode];
+    NSString *countryCode = [PhoneNumber defaultCountryCode];
 
 #ifdef DEBUG
     if ([self lastRegisteredCountryCode].length > 0) {
@@ -296,22 +283,9 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
 
 #pragma mark - Actions
 
-- (void)didTapExistingUserButton:(id)sender
-{
-    DDLogInfo(@"called %s", __PRETTY_FUNCTION__);
-
-    [OWSAlerts
-        showAlertWithTitle:
-            [NSString stringWithFormat:NSLocalizedString(@"EXISTING_USER_REGISTRATION_ALERT_TITLE",
-                                           @"during registration, embeds {{device type}}, e.g. \"iPhone\" or \"iPad\""),
-                      [UIDevice currentDevice].localizedModel]
-                   message:NSLocalizedString(@"EXISTING_USER_REGISTRATION_ALERT_BODY", @"during registration")];
-}
-
 - (void)sendCodeAction
 {
-    NSString *phoneNumberText =
-        [_phoneNumberTextField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    NSString *phoneNumberText = [_phoneNumberTextField.text ows_stripped];
     if (phoneNumberText.length < 1) {
         [OWSAlerts
             showAlertWithTitle:NSLocalizedString(@"REGISTRATION_VIEW_NO_PHONE_NUMBER_ALERT_TITLE",
@@ -383,12 +357,6 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     UINavigationController *navigationController =
         [[UINavigationController alloc] initWithRootViewController:countryCodeController];
     [self presentViewController:navigationController animated:YES completion:[UIUtil modalCompletionBlock]];
-}
-
-- (void)presentInvalidCountryCodeError {
-    [OWSAlerts showAlertWithTitle:NSLocalizedString(@"REGISTER_CC_ERR_ALERT_VIEW_TITLE", @"")
-                          message:NSLocalizedString(@"REGISTER_CC_ERR_ALERT_VIEW_MESSAGE", @"")
-                      buttonTitle:CommonStrings.dismissButton];
 }
 
 - (void)backgroundTapped:(UIGestureRecognizer *)sender
@@ -473,7 +441,7 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
     NSError *error;
     [SAMKeychain setPassword:value forService:kKeychainService_LastRegistered account:key error:&error];
     if (error) {
-        DDLogError(@"%@ Error persisting 'last registered' value in keychain: %@", self.tag, error);
+        DDLogError(@"%@ Error persisting 'last registered' value in keychain: %@", self.logTag, error);
     }
 }
 
@@ -498,18 +466,6 @@ NSString *const kKeychainKey_LastRegisteredPhoneNumber = @"kKeychainKey_LastRegi
 }
 
 #endif
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
-}
 
 @end
 

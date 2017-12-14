@@ -6,14 +6,15 @@
 #import "AppDelegate.h"
 #import "AvatarViewHelper.h"
 #import "HomeViewController.h"
+#import "NSString+OWS.h"
 #import "OWSNavigationController.h"
-#import "OWSProfileManager.h"
 #import "Signal-Swift.h"
 #import "SignalsNavigationController.h"
 #import "UIColor+OWS.h"
 #import "UIFont+OWS.h"
 #import "UIView+OWS.h"
 #import "UIViewController+OWS.h"
+#import <SignalMessaging/OWSProfileManager.h>
 #import <SignalServiceKit/NSDate+OWS.h>
 #import <SignalServiceKit/TSStorageManager.h>
 
@@ -38,7 +39,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
 
 @property (nonatomic) UIImageView *cameraImageView;
 
-@property (nonatomic) UIButton *saveButton;
+@property (nonatomic) OWSFlatButton *saveButton;
 
 @property (nonatomic, nullable) UIImage *avatar;
 
@@ -113,7 +114,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
     nameLabel.textColor = [UIColor blackColor];
     nameLabel.font = [UIFont ows_mediumFontWithSize:fontSizePoints];
     [nameRow addSubview:nameLabel];
-    [nameLabel autoPinLeadingToSuperView];
+    [nameLabel autoPinLeadingToSuperview];
     [nameLabel autoPinHeightToSuperviewWithMargin:5.f];
 
     UITextField *nameTextField = [UITextField new];
@@ -129,7 +130,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
     [nameTextField addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
     [nameRow addSubview:nameTextField];
     [nameTextField autoPinLeadingToTrailingOfView:nameLabel margin:10.f];
-    [nameTextField autoPinTrailingToSuperView];
+    [nameTextField autoPinTrailingToSuperview];
     [nameTextField autoVCenterInSuperview];
 
     // Avatar
@@ -146,7 +147,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
     avatarLabel.textColor = [UIColor blackColor];
     avatarLabel.font = [UIFont ows_mediumFontWithSize:fontSizePoints];
     [avatarRow addSubview:avatarLabel];
-    [avatarLabel autoPinLeadingToSuperView];
+    [avatarLabel autoPinLeadingToSuperview];
     [avatarLabel autoVCenterInSuperview];
 
     self.avatarView = [AvatarImageView new];
@@ -157,7 +158,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
     [avatarRow addSubview:self.avatarView];
     [avatarRow addSubview:self.cameraImageView];
     [self updateAvatarView];
-    [self.avatarView autoPinTrailingToSuperView];
+    [self.avatarView autoPinTrailingToSuperview];
     [self.avatarView autoPinLeadingToTrailingOfView:avatarLabel margin:10.f];
     const CGFloat kAvatarSizePoints = 50.f;
     const CGFloat kAvatarVMargin = 4.f;
@@ -198,8 +199,8 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
     infoLabel.numberOfLines = 0;
     infoLabel.lineBreakMode = NSLineBreakByWordWrapping;
     [infoRow addSubview:infoLabel];
-    [infoLabel autoPinLeadingToSuperView];
-    [infoLabel autoPinTrailingToSuperView];
+    [infoLabel autoPinLeadingToSuperview];
+    [infoLabel autoPinTrailingToSuperview];
     [infoLabel autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:10.f];
     [infoLabel autoPinEdgeToSuperviewEdge:ALEdgeBottom withInset:10.f];
 
@@ -209,21 +210,22 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
         UIView *buttonRow = [UIView containerView];
         [rows addObject:buttonRow];
 
-        UIButton *saveButton = [UIButton buttonWithType:UIButtonTypeCustom];
+        const CGFloat kButtonHeight = 47.f;
+        // NOTE: We use ows_signalBrandBlueColor instead of ows_materialBlueColor
+        //       throughout the onboarding flow to be consistent with the headers.
+        OWSFlatButton *saveButton =
+            [OWSFlatButton buttonWithTitle:NSLocalizedString(@"PROFILE_VIEW_SAVE_BUTTON",
+                                               @"Button to save the profile view in the profile view.")
+                                      font:[OWSFlatButton fontForHeight:kButtonHeight]
+                                titleColor:[UIColor whiteColor]
+                           backgroundColor:[UIColor ows_signalBrandBlueColor]
+                                    target:self
+                                  selector:@selector(saveButtonPressed)];
         self.saveButton = saveButton;
-        saveButton.backgroundColor = [UIColor ows_signalBrandBlueColor];
-        [saveButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        saveButton.titleLabel.font = [UIFont ows_boldFontWithSize:fontSizePoints];
-        [saveButton setTitle:NSLocalizedString(
-                                 @"PROFILE_VIEW_SAVE_BUTTON", @"Button to save the profile view in the profile view.")
-                    forState:UIControlStateNormal];
-        [saveButton setContentHorizontalAlignment:UIControlContentHorizontalAlignmentCenter];
-        [saveButton setContentVerticalAlignment:UIControlContentVerticalAlignmentCenter];
         [buttonRow addSubview:saveButton];
         [saveButton autoPinLeadingAndTrailingToSuperview];
         [saveButton autoPinHeightToSuperview];
         [saveButton autoSetDimension:ALDimensionHeight toSize:47.f];
-        [saveButton addTarget:self action:@selector(saveButtonPressed) forControlEvents:UIControlEventTouchUpInside];
     }
 
     // Row Layout
@@ -236,8 +238,8 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
         } else {
             [row autoPinEdgeToSuperviewEdge:ALEdgeTop withInset:15.f];
         }
-        [row autoPinLeadingToSuperViewWithMargin:18.f];
-        [row autoPinTrailingToSuperViewWithMargin:18.f];
+        [row autoPinLeadingToSuperviewWithMargin:18.f];
+        [row autoPinTrailingToSuperviewWithMargin:18.f];
         lastRow = row;
 
         if (lastRow == nameRow || lastRow == avatarRow) {
@@ -245,8 +247,8 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
             separator.backgroundColor = [UIColor colorWithWhite:0.9f alpha:1.f];
             [contentView addSubview:separator];
             [separator autoPinEdge:ALEdgeTop toEdge:ALEdgeBottom ofView:lastRow withOffset:5.f];
-            [separator autoPinLeadingToSuperViewWithMargin:18.f];
-            [separator autoPinTrailingToSuperViewWithMargin:18.f];
+            [separator autoPinLeadingToSuperviewWithMargin:18.f];
+            [separator autoPinTrailingToSuperviewWithMargin:18.f];
             [separator autoSetDimension:ALDimensionHeight toSize:1.f];
             lastRow = separator;
         }
@@ -345,11 +347,12 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
     // The save button is only used in "registration" and "upgrade or nag" modes.
     if (self.hasUnsavedChanges) {
         self.saveButton.enabled = YES;
-        self.saveButton.backgroundColor = [UIColor ows_signalBrandBlueColor];
+        [self.saveButton setBackgroundColorsWithUpColor:[UIColor ows_signalBrandBlueColor]];
     } else {
         self.saveButton.enabled = NO;
-        self.saveButton.backgroundColor =
-            [[UIColor ows_signalBrandBlueColor] blendWithColor:[UIColor whiteColor] alpha:0.5f];
+        [self.saveButton
+            setBackgroundColorsWithUpColor:[[UIColor ows_signalBrandBlueColor] blendWithColor:[UIColor whiteColor]
+                                                                                        alpha:0.5f]];
     }
 }
 
@@ -408,7 +411,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
 
 - (NSString *)normalizedProfileName
 {
-    return [self.nameTextField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    return [self.nameTextField.text ows_stripped];
 }
 
 - (void)updateProfileCompleted
@@ -435,7 +438,6 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
 - (void)showHomeView
 {
     HomeViewController *homeView = [HomeViewController new];
-    homeView.newlyRegisteredUser = YES;
     SignalsNavigationController *navigationController =
         [[SignalsNavigationController alloc] initWithRootViewController:homeView];
     AppDelegate *appDelegate = (AppDelegate *)[UIApplication sharedApplication].delegate;
@@ -509,7 +511,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
 {
     if (sender.state == UIGestureRecognizerStateRecognized) {
         [UIApplication.sharedApplication
-            openURL:[NSURL URLWithString:@"https://support.whispersystems.org/hc/en-us/articles/115001110511"]];
+            openURL:[NSURL URLWithString:@"https://support.signal.org/hc/en-us/articles/115001110511"]];
     }
 }
 
@@ -575,6 +577,7 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
 
 - (void)avatarDidChange:(UIImage *)image
 {
+    OWSAssert([NSThread isMainThread]);
     OWSAssert(image);
 
     self.avatar = [image resizedImageToFillPixelSize:CGSizeMake(kOWSProfileManager_MaxAvatarDiameter,
@@ -610,18 +613,6 @@ NSString *const kProfileView_LastPresentedDate = @"kProfileView_LastPresentedDat
         [self backOrSkipButtonPressed];
     }
     return result;
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

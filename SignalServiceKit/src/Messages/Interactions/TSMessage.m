@@ -3,7 +3,7 @@
 //
 
 #import "TSMessage.h"
-#import "NSDate+millisecondTimeStamp.h"
+#import "NSDate+OWS.h"
 #import "TSAttachment.h"
 #import "TSAttachmentPointer.h"
 #import "TSThread.h"
@@ -15,6 +15,10 @@ NS_ASSUME_NONNULL_BEGIN
 static const NSUInteger OWSMessageSchemaVersion = 3;
 
 @interface TSMessage ()
+
+@property (nonatomic, nullable) NSString *body;
+@property (nonatomic) uint32_t expiresInSeconds;
+@property (nonatomic) uint64_t expireStartedAt;
 
 /**
  * The version of the model class's schema last used to serialize this model. Use this to manage data migrations during
@@ -171,6 +175,15 @@ static const NSUInteger OWSMessageSchemaVersion = 3;
 
 - (BOOL)shouldStartExpireTimer
 {
+    __block BOOL result;
+    [self.dbReadConnection readWithBlock:^(YapDatabaseReadTransaction *_Nonnull transaction) {
+        result = [self shouldStartExpireTimer:transaction];
+    }];
+    return result;
+}
+
+- (BOOL)shouldStartExpireTimer:(YapDatabaseReadTransaction *)transaction
+{
     return self.isExpiringMessage;
 }
 
@@ -199,6 +212,22 @@ static const NSUInteger OWSMessageSchemaVersion = 3;
     }
 }
 
+- (NSString *)previewTextWithTransaction:(YapDatabaseReadTransaction *)transaction
+{
+    if ([self hasAttachments]) {
+        NSString *attachmentId = self.attachmentIds[0];
+        TSAttachment *attachment = [TSAttachment fetchObjectWithUniqueID:attachmentId transaction:transaction];
+        if (attachment) {
+            return attachment.description;
+        } else {
+            return NSLocalizedString(@"UNKNOWN_ATTACHMENT_LABEL", @"In Inbox view, last message label for thread with corrupted attachment.");
+        }
+    } else {
+        return self.body;
+    }
+}
+
+// TODO deprecate this and implement something like previewTextWithTransaction: for all TSInteractions
 - (NSString *)description
 {
     if ([self hasAttachments]) {
@@ -252,16 +281,16 @@ static const NSUInteger OWSMessageSchemaVersion = 3;
     return YES;
 }
 
-#pragma mark - Logging
+#pragma mark - Update With... Methods
 
-+ (NSString *)tag
+- (void)updateWithExpireStartedAt:(uint64_t)expireStartedAt transaction:(YapDatabaseReadWriteTransaction *)transaction
 {
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
+    OWSAssert(expireStartedAt > 0);
 
-- (NSString *)tag
-{
-    return self.class.tag;
+    [self applyChangeToSelfAndLatestCopy:transaction
+                             changeBlock:^(TSMessage *message) {
+                                 [message setExpireStartedAt:expireStartedAt];
+                             }];
 }
 
 @end

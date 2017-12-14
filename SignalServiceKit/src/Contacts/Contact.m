@@ -80,7 +80,6 @@ NS_ASSUME_NONNULL_BEGIN
             } else if ([phoneNumberField.label isEqualToString:CNLabelPhoneNumberiPhone]) {
                 phoneNumberNameMap[phoneNumber.stringValue]
                     = NSLocalizedString(@"PHONE_NUMBER_TYPE_IPHONE", @"Label for 'IPhone' phone numbers.");
-                ;
             } else if ([phoneNumberField.label isEqualToString:CNLabelPhoneNumberMobile]) {
                 phoneNumberNameMap[phoneNumber.stringValue]
                     = NSLocalizedString(@"PHONE_NUMBER_TYPE_MOBILE", @"Label for 'Mobile' phone numbers.");
@@ -136,7 +135,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSString *)trimName:(NSString *)name
 {
-    return [name stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    return [name stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 }
 
 + (NSString *)uniqueIdFromABRecordId:(ABRecordID)recordId

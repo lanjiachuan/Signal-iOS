@@ -31,8 +31,8 @@ typedef NS_ENUM(NSInteger, TSGroupMetaMessage) {
 };
 
 @class OWSSignalServiceProtosAttachmentPointer;
-@class OWSSignalServiceProtosDataMessageBuilder;
 @class OWSSignalServiceProtosContentBuilder;
+@class OWSSignalServiceProtosDataMessageBuilder;
 @class SignalRecipient;
 
 @interface TSOutgoingMessage : TSMessage
@@ -101,6 +101,17 @@ typedef NS_ENUM(NSInteger, TSGroupMetaMessage) {
 
 @property (nonatomic, readonly) BOOL isVoiceMessage;
 
+// This property won't be accurate for legacy messages.
+@property (atomic, readonly) BOOL isFromLinkedDevice;
+
+// Map of "recipient id"-to-"delivery time" of the recipients who have received the message.
+@property (atomic, readonly) NSDictionary<NSString *, NSNumber *> *recipientDeliveryMap;
+
+// Map of "recipient id"-to-"read time" of the recipients who have read the message.
+@property (atomic, readonly) NSDictionary<NSString *, NSNumber *> *recipientReadMap;
+
+@property (nonatomic, readonly) BOOL isSilent;
+
 /**
  * Signal Identifier (e.g. e164 number) or nil if in a group thread.
  */
@@ -137,46 +148,38 @@ typedef NS_ENUM(NSInteger, TSGroupMetaMessage) {
 - (OWSSignalServiceProtosAttachmentPointer *)buildAttachmentProtoForAttachmentId:(NSString *)attachmentId
                                                                         filename:(nullable NSString *)filename;
 
-// TSOutgoingMessage are updated from many threads. We don't want to save
-// our local copy (this instance) since it may be out of date.  Instead, we
-// use these "updateWith..." methods to:
-//
-// a) Update a property of this instance.
-// b) Load an up-to-date instance of this model from from the data store.
-// c) Update and save that fresh instance.
-// d) If this message hasn't yet been saved, save this local instance.
-//
-// After "updateWith...":
-//
-// a) An updated copy of this message will always have been saved in the
-//    data store.
-// b) The local property on this instance will always have been updated.
-// c) Other properties on this instance may be out of date.
-//
-// All mutable properties of this class have been made read-only to
-// prevent accidentally modifying them directly.
-//
-// This isn't a perfect arrangement, but in practice this will prevent
-// data loss and will resolve all known issues.
+- (BOOL)shouldBeSaved;
+
+#pragma mark - Update With... Methods
+
 - (void)updateWithMessageState:(TSOutgoingMessageState)messageState;
 - (void)updateWithMessageState:(TSOutgoingMessageState)messageState
                    transaction:(YapDatabaseReadWriteTransaction *)transaction;
 - (void)updateWithSendingError:(NSError *)error;
-- (void)updateWithHasSyncedTranscript:(BOOL)hasSyncedTranscript;
+- (void)updateWithHasSyncedTranscript:(BOOL)hasSyncedTranscript
+                          transaction:(YapDatabaseReadWriteTransaction *)transaction;
 - (void)updateWithCustomMessage:(NSString *)customMessage transaction:(YapDatabaseReadWriteTransaction *)transaction;
 - (void)updateWithCustomMessage:(NSString *)customMessage;
-- (void)updateWithWasDeliveredWithTransaction:(YapDatabaseReadWriteTransaction *)transaction;
-- (void)updateWithWasDelivered;
-- (void)updateWithWasSentAndDelivered;
+// deliveryTimestamp is an optional parameter, since legacy
+// delivery receipts don't have a "delivery timestamp".  Those
+// messages repurpose the "timestamp" field to indicate when the
+// corresponding message was originally sent.
+- (void)updateWithDeliveredToRecipientId:(NSString *)recipientId
+                       deliveryTimestamp:(NSNumber *_Nullable)deliveryTimestamp
+                             transaction:(YapDatabaseReadWriteTransaction *)transaction;
+- (void)updateWithWasSentFromLinkedDeviceWithTransaction:(YapDatabaseReadWriteTransaction *)transaction;
 - (void)updateWithSingleGroupRecipient:(NSString *)singleGroupRecipient
                            transaction:(YapDatabaseReadWriteTransaction *)transaction;
+- (void)updateWithReadRecipientId:(NSString *)recipientId
+                    readTimestamp:(uint64_t)readTimestamp
+                      transaction:(YapDatabaseReadWriteTransaction *)transaction;
+- (nullable NSNumber *)firstRecipientReadTimestamp;
 
 #pragma mark - Sent Recipients
 
 - (NSUInteger)sentRecipientsCount;
 - (BOOL)wasSentToRecipient:(NSString *)contactId;
 - (void)updateWithSentRecipient:(NSString *)contactId transaction:(YapDatabaseReadWriteTransaction *)transaction;
-- (void)updateWithSentRecipient:(NSString *)contactId;
 
 @end
 

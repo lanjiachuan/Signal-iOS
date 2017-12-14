@@ -11,18 +11,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation DebugUIContacts
 
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
-}
-
 #pragma mark - Factory Methods
 
 - (NSString *)name
@@ -53,6 +41,10 @@ NS_ASSUME_NONNULL_BEGIN
                                            [OWSTableItem itemWithTitle:@"Delete Random Contacts"
                                                            actionBlock:^{
                                                                [DebugUIContacts deleteRandomContacts];
+                                                           }],
+                                           [OWSTableItem itemWithTitle:@"Delete All Contacts"
+                                                           actionBlock:^{
+                                                               [DebugUIContacts deleteAllContacts];
                                                            }],
                                        ]];
 }
@@ -1163,7 +1155,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)createRandomContactsBatch:(NSUInteger)count
                    contactHandler:(nullable void (^)(
                                       CNContact *_Nonnull contact, NSUInteger idx, BOOL *_Nonnull stop))contactHandler
-           batchCompletionHandler:(nullable void (^)())batchCompletionHandler
+           batchCompletionHandler:(nullable void (^)(void))batchCompletionHandler
 {
     OWSAssert(count > 0);
     OWSAssert(batchCompletionHandler);
@@ -1240,8 +1232,10 @@ NS_ASSUME_NONNULL_BEGIN
                  }];
 }
 
-+ (void)deleteRandomContacts
++ (void)deleteContactsWithFilter:(BOOL (^_Nonnull)(CNContact *contact))filterBlock
 {
+    OWSAssert(filterBlock);
+
     CNAuthorizationStatus status = [CNContactStore authorizationStatusForEntityType:CNEntityTypeContacts];
     if (status == CNAuthorizationStatusDenied || status == CNAuthorizationStatusRestricted) {
         [OWSAlerts showAlertWithTitle:@"Error" message:@"No contacts access."];
@@ -1270,7 +1264,7 @@ NS_ASSUME_NONNULL_BEGIN
                             [store enumerateContactsWithFetchRequest:fetchRequest
                                                                error:&fetchError
                                                           usingBlock:^(CNContact *contact, BOOL *stop) {
-                                                              if ([contact.familyName hasPrefix:@"Rando-"]) {
+                                                              if (filterBlock(contact)) {
                                                                   [request deleteContact:[contact mutableCopy]];
                                                               }
                                                           }];
@@ -1284,6 +1278,20 @@ NS_ASSUME_NONNULL_BEGIN
                             [OWSAlerts showAlertWithTitle:@"Error" message:saveError.localizedDescription];
                         }
                     }];
+}
+
++ (void)deleteAllContacts
+{
+    [self deleteContactsWithFilter:^(CNContact *contact) {
+        return YES;
+    }];
+}
+
++ (void)deleteRandomContacts
+{
+    [self deleteContactsWithFilter:^(CNContact *contact) {
+        return [contact.familyName hasPrefix:@"Rando-"];
+    }];
 }
 
 @end

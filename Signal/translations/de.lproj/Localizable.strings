@@ -37,15 +37,6 @@
 /* The label for the 'save' button in action sheets. */
 "ALERT_SAVE" = "Speichern";
 
-/* A message for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_MESSAGE" = "Es wird überprüft, ob dies ein gültiges Signal-Benutzerkonto ist.";
-
-/* A title for the alert shown while validating a signal account */
-"ALERT_VALIDATE_RECIPIENT_TITLE" = "Validieren";
-
-/* registration button text */
-"ALREADY_HAVE_ACCOUNT_BUTTON" = "Du hast bereits ein Signal-Konto?";
-
 /* No comment provided by engineer. */
 "ANSWER_CALL_BUTTON_TITLE" = "Annehmen";
 
@@ -217,6 +208,9 @@
 /* Accessibilty label for placing call button */
 "CALL_LABEL" = "Anrufen";
 
+/* Text shown on call screen in place of remote video */
+"CALL_REMOTE_VIDEO_DISABLED" = "Bitte aktualisiere auf iOS 9 oder neuer, um ein Videobild zu sehen.";
+
 /* Call setup status label after outgoing call times out */
 "CALL_SCREEN_STATUS_NO_ANSWER" = "Keine Antwort.";
 
@@ -232,8 +226,23 @@
 /* Title for alert offering to call a user. */
 "CALL_USER_ALERT_TITLE" = "Anrufen?";
 
+/* Accessibility label for accepting incoming calls */
+"CALL_VIEW_ACCEPT_INCOMING_CALL_LABEL" = "Eingehenden Anruf annehmen";
+
+/* Accessibility label for selection the audio source */
+"CALL_VIEW_AUDIO_SOURCE_LABEL" = "Audio";
+
+/* Accessibility label for declining incoming calls */
+"CALL_VIEW_DECLINE_INCOMING_CALL_LABEL" = "Eingehenden Anruf ablehnen";
+
+/* Accessibility label for hang up call */
+"CALL_VIEW_HANGUP_LABEL" = "Anruf beenden";
+
+/* Accessibility label for muting the microphone */
+"CALL_VIEW_MUTE_LABEL" = "Stummschalten";
+
 /* Reminder to the user of the benefits of enabling CallKit and disabling CallKit privacy. */
-"CALL_VIEW_SETTINGS_NAG_DESCRIPTION_ALL" = "Durch Ändern deiner Einstellungen kannst du Anrufe direkt aus dem Sperrbildschirm heraus beantworten sowie Name und Rufnummer für eingehende Anrufe sehen.\n\nSiehe die Datenschutzeinstelllungen für Details.";
+"CALL_VIEW_SETTINGS_NAG_DESCRIPTION_ALL" = "Durch Ändern deiner Einstellungen kannst du Anrufe direkt aus dem Sperrbildschirm heraus beantworten sowie Name und Rufnummer für eingehende Anrufe sehen.\n\nSiehe die Datenschutz-Einstelllungen für Details.";
 
 /* Reminder to the user of the benefits of disabling CallKit privacy. */
 "CALL_VIEW_SETTINGS_NAG_DESCRIPTION_PRIVACY" = "Durch Ändern deiner Einstellungen kannst du Name und Rufnummer für eingehende Anrufe sehen.\n\nSiehe die Datenschutzeinstellungen für Details.";
@@ -241,8 +250,14 @@
 /* Label for button that dismiss the call view's settings nag. */
 "CALL_VIEW_SETTINGS_NAG_NOT_NOW_BUTTON" = "Nicht jetzt";
 
-/* Label for button that shows the privacy settings */
-"CALL_VIEW_SETTINGS_NAG_SHOW_CALL_SETTINGS" = "Datenschutz-Einstellungen anzeigen";
+/* Label for button that shows the privacy settings. */
+"CALL_VIEW_SETTINGS_NAG_SHOW_CALL_SETTINGS" = "Datenschutzeinstellungen anzeigen";
+
+/* Accessibility label to switch to audio only */
+"CALL_VIEW_SWITCH_TO_AUDIO_LABEL" = "Zu Audioanruf wechseln";
+
+/* Accessibility label to switch to video call */
+"CALL_VIEW_SWITCH_TO_VIDEO_LABEL" = "Zu Videoanruf wechseln";
 
 /* notification action */
 "CALLBACK_BUTTON_TITLE" = "Rückruf";
@@ -261,6 +276,15 @@
 
 /* Activity Sheet label */
 "COMPARE_SAFETY_NUMBER_ACTION" = "Mit Zwischenablage vergleichen";
+
+/* Table section header for contact listing when composing a new message */
+"COMPOSE_MESSAGE_CONTACT_SECTION_TITLE" = "Kontakte";
+
+/* Table section header for group listing when composing a new message */
+"COMPOSE_MESSAGE_GROUP_SECTION_TITLE" = "Gruppen";
+
+/* Table section header for invite listing when composing a new message */
+"COMPOSE_MESSAGE_INVITE_SECTION_TITLE" = "Einladen";
 
 /* Multiline label explaining why compose-screen contact picker is empty. */
 "COMPOSE_SCREEN_MISSING_CONTACTS_PERMISSION" = "Um sehen zu können, welche deiner Kontake Signal verwenden, musst du in der App »Einstellungen« Signal Zugriff auf deine Kontakte erlauben.";
@@ -376,6 +400,12 @@
 /* Title for the group of buttons show for unknown contacts offering to add them to contacts, etc. */
 "CONVERSATION_VIEW_CONTACTS_OFFER_TITLE" = "Dieser Benutzer befindet sich nicht in deinen Kontakten.";
 
+/* Indicates that the app is loading more messages in this conversation. */
+"CONVERSATION_VIEW_LOADING_MORE_MESSAGES" = "Mehr Nachrichten werden geladen …";
+
+/* Indicator on truncated text messages that they can be tapped to see the entire text message. */
+"CONVERSATION_VIEW_OVERSIZE_TEXT_TAP_FOR_MORE" = "Antippen für mehr";
+
 /* Message shown in conversation view that offers to block an unknown user. */
 "CONVERSATION_VIEW_UNKNOWN_CONTACT_BLOCK_OFFER" = "Diesen Benutzer blockieren";
 
@@ -396,6 +426,36 @@
 
 /* Title shown while the app is updating its database. */
 "DATABASE_VIEW_OVERLAY_TITLE" = "Datenbank wird aktualisiert";
+
+/* Message indicating that the debug log is being uploaded. */
+"DEBUG_LOG_ACTIVITY_INDICATOR" = "Diagnoseprotokoll wird gesendet …";
+
+/* Message of the debug log alert. */
+"DEBUG_LOG_ALERT_MESSAGE" = "Was möchtest du mit dem Link zu deinem Diagnoseprotokoll tun?";
+
+/* Label for the 'Open a Bug Report' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_BUG_REPORT" = "Fehlerbericht eröffnen";
+
+/* Label for the 'copy link' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_COPY_LINK" = "Link kopieren";
+
+/* Label for the 'email debug log' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_EMAIL" = "Via E-Mail an Support senden";
+
+/* Label for the 'send to self' option of the the debug log alert. */
+"DEBUG_LOG_ALERT_OPTION_SEND_TO_SELF" = "An mich senden";
+
+/* Title of the debug log alert. */
+"DEBUG_LOG_ALERT_TITLE" = "Noch ein Schritt";
+
+/* Title of the alert indicating the debug log upload failed. */
+"DEBUG_LOG_FAILURE_ALERT_TITLE" = "Übermitteln des Diagnoseprotokolls gescheitert";
+
+/* Message of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_MESSAGE" = "Der Gist-Link wurde in deine Zwischenablage kopiert. Du wirst nun zur Problemliste auf GitHub weitergeleitet.";
+
+/* Title of the alert before redirecting to Github Issues. */
+"DEBUG_LOG_GITHUB_ISSUE_ALERT_TITLE" = "GitHub-Weiterleitung";
 
 /* {{Short Date}} when device last communicated with Signal Server. */
 "DEVICE_LAST_ACTIVE_AT_LABEL" = "Zuletzt aktiv: %@";
@@ -460,6 +520,12 @@
 /* Short name for edit menu item to copy contents of media message. */
 "EDIT_ITEM_COPY_ACTION" = "Kopieren";
 
+/* Short name for edit menu item to delete contents of media message. */
+"EDIT_ITEM_DELETE_ACTION" = "Löschen";
+
+/* Short name for edit menu item to show message metadata. */
+"EDIT_ITEM_MESSAGE_METADATA_ACTION" = "Info";
+
 /* Short name for edit menu item to save contents of media message. */
 "EDIT_ITEM_SAVE_ACTION" = "Speichern";
 
@@ -520,6 +586,9 @@
 /* Error mesage indicating that message send failed due to block list */
 "ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_BLOCK_LIST" = "Nachrichtenversand gescheitert, da du den Benutzer blockiert hast.";
 
+/* Error mesage indicating that message send failed due to failed attachment write */
+"ERROR_DESCRIPTION_MESSAGE_SEND_FAILED_DUE_TO_FAILED_ATTACHMENT_WRITE" = "Senden gescheitert, da Fehler beim Schreiben des Anhangs.";
+
 /* Generic error used whenver Signal can't contact the server */
 "ERROR_DESCRIPTION_NO_INTERNET" = "Signal konnte keine Verbindung zum Internet herstellen. Bitte versuche ein anderes WLAN-Netzwerk oder verwende die mobile Datenverbindung.";
 
@@ -537,6 +606,9 @@
 
 /* Error message when attempting to send message */
 "ERROR_DESCRIPTION_UNREGISTERED_RECIPIENT" = "Kontakt ist kein Signal-Nutzer.";
+
+/* Error message when unable to receive an attachment because the sending client is too old. */
+"ERROR_MESSAGE_ATTACHMENT_FROM_OLD_CLIENT" = "Gescheitert: Bitte den Absender, Signal zu aktualisieren und den Anhang erneut zu senden.";
 
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_DUPLICATE_MESSAGE" = "Doppelte Nachricht erhalten.";
@@ -564,12 +636,6 @@
 
 /* No comment provided by engineer. */
 "ERROR_MESSAGE_WRONG_TRUSTED_IDENTITY_KEY" = "Sicherheitsnummer geändert. Zum Verifizieren antippen.";
-
-/* during registration */
-"EXISTING_USER_REGISTRATION_ALERT_BODY" = "Derzeit kann Signal je Rufnummer nur auf einem Mobilgerät aktiv sein.";
-
-/* during registration, embeds {{device type}}, e.g. \"iPhone\" or \"iPad\" */
-"EXISTING_USER_REGISTRATION_ALERT_TITLE" = "Die Aktivierung dieses %@s wird Signal auf jedem anderen mit dieser Rufnummer verknüpften Gerät deaktivieren.";
 
 /* Message for the alert indicating the 'export with signal' file had an invalid filename. */
 "EXPORT_WITH_SIGNAL_ERROR_MESSAGE_INVALID_FILENAME" = "Dateiname ungültig.";
@@ -610,14 +676,35 @@
 /* A label for generic attachments. */
 "GENERIC_ATTACHMENT_LABEL" = "Anhang";
 
+/* Error displayed when there is a failure fetching gifs from the remote service. */
+"GIF_PICKER_ERROR_FETCH_FAILURE" = "Abruf des angeforderten GIFs gescheitert. Bitte überprüfe, ob du online bist.";
+
+/* Generic error displayed when picking a gif */
+"GIF_PICKER_ERROR_GENERIC" = "Ein unbekannter Fehler ist aufgetreten.";
+
+/* Shown when selected gif couldn't be fetched */
+"GIF_PICKER_FAILURE_ALERT_TITLE" = "GIF kann nicht abgerufen werden";
+
+/* Alert message shown when user tries to search for GIFs without entering any search terms. */
+"GIF_PICKER_VIEW_MISSING_QUERY" = "Bitte gib deine Suche ein.";
+
+/* Title for the 'gif picker' dialog. */
+"GIF_PICKER_VIEW_TITLE" = "GIF-Suche";
+
+/* Indicates that an error occured while searching. */
+"GIF_VIEW_SEARCH_ERROR" = "Fehler. Für erneuten Versuch antippen.";
+
+/* Indicates that the user's search had no results. */
+"GIF_VIEW_SEARCH_NO_RESULTS" = "Keine Ergebnisse.";
+
+/* Placeholder text for the search field in gif view */
+"GIF_VIEW_SEARCH_PLACEHOLDER_TEXT" = "Gib deine Suche ein";
+
 /* No comment provided by engineer. */
 "GROUP_AVATAR_CHANGED" = "Avatar geändert.";
 
 /* No comment provided by engineer. */
 "GROUP_CREATED" = "Gruppe erstellt.";
-
-/* No comment provided by engineer. */
-"GROUP_CREATING" = "Neue Gruppe wird erstellt";
 
 /* Message shown in conversation view that indicates there were issues with group creation. */
 "GROUP_CREATION_FAILED" = "Nicht alle Mitglieder konnten zur Gruppe hinzugefügt werden. Für erneuten Versuch antippen.";
@@ -767,13 +854,10 @@
 "LINKING_DEVICE_FAILED_TITLE" = "Verknüpfen des Geräts gescheitert";
 
 /* table cell label in conversation settings */
-"LIST_GROUP_MEMBERS_ACTION" = "Gruppenmitglieder anzeigen";
+"LIST_GROUP_MEMBERS_ACTION" = "Gruppenmitglieder";
 
 /* No comment provided by engineer. */
 "LOGGING_SECTION" = "Protokollierung";
-
-/* No comment provided by engineer. */
-"ME_STRING" = "Ich";
 
 /* media picker option to take photo or video */
 "MEDIA_FROM_CAMERA_BUTTON" = "Kamera";
@@ -787,11 +871,65 @@
 /* No comment provided by engineer. */
 "MESSAGE_COMPOSEVIEW_TITLE" = "Neue Nachricht";
 
-/* message footer for delivered messages */
+/* Label for file size of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_FILE_SIZE" = "Dateigröße";
+
+/* Label for the MIME type of attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MIME_TYPE" = "MIME-Typ";
+
+/* Label for 'missing' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_MISSING_FILE" = "Fehlender Anhang";
+
+/* Label for 'not yet downloaded' attachments in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_ATTACHMENT_NOT_YET_DOWNLOADED" = "Noch nicht heruntergeladen";
+
+/* Status label for messages which are delivered. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_DELIVERED" = "Zugestellt";
+
+/* Status label for messages which are failed. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_FAILED" = "Gescheitert";
+
+/* Status label for messages which are read. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_READ" = "Gelesen";
+
+/* Status label for messages which are sending. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENDING" = "Wird gesendet";
+
+/* Status label for messages which are sent. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_SENT" = "Gesendet";
+
+/* Status label for messages which are uploading. */
+"MESSAGE_METADATA_VIEW_MESSAGE_STATUS_UPLOADING" = "Wird hochgeladen";
+
+/* Label for messages without a body or attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_NO_ATTACHMENT_OR_BODY" = "Nachricht hat keinen Inhalt oder Anhang.";
+
+/* Label for the 'received date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_RECEIVED_DATE_TIME" = "Empfangen";
+
+/* Label for the 'sender' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENDER" = "Absender";
+
+/* Label for the 'sent date & time' field of the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SENT_DATE_TIME" = "Gesendet";
+
+/* Label for the original filename of any attachment in the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_SOURCE_FILENAME" = "Dateiname";
+
+/* Title for the 'message metadata' view. */
+"MESSAGE_METADATA_VIEW_TITLE" = "Nachricht";
+
+/* message status for message delivered to their recipient. */
 "MESSAGE_STATUS_DELIVERED" = "Zugestellt";
 
 /* message footer for failed messages */
 "MESSAGE_STATUS_FAILED" = "Versand gescheitert. Für Details antippen.";
+
+/* message footer for read messages */
+"MESSAGE_STATUS_READ" = "Gelesen";
+
+/* message status while message is sending. */
+"MESSAGE_STATUS_SENDING" = "Wird gesendet …";
 
 /* message footer for sent messages */
 "MESSAGE_STATUS_SENT" = "Gesendet";
@@ -855,23 +993,8 @@
    Alert title when camera is not authorized */
 "MISSING_CAMERA_PERMISSION_TITLE" = "Signal benötigt Zugriff auf deine Kamera.";
 
-/* No comment provided by engineer. */
-"MSGVIEW_MISSED_CALL_BECAUSE_OF_CHANGED_IDENTITY" = "Entgangener Anruf, da sich die Sicherheitsnummer des Kontakts geändert hat.";
-
 /* notification title. Embeds {{caller's name or phone number}} */
 "MSGVIEW_MISSED_CALL_WITH_NAME" = "Entgangener Anruf von %@.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_RECEIVED_CALL" = "Du hast einen Anruf von %@ erhalten.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_THEY_TRIED_TO_CALL_YOU" = "%@ hat versucht, dich anzurufen.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_CALLED" = "Du hast %@ angerufen.";
-
-/* No comment provided by engineer. */
-"MSGVIEW_YOU_TRIED_TO_CALL" = "Du hast versucht, %@ anzurufen.";
 
 /* No comment provided by engineer. */
 "MULTIDEVICE_PAIRING_MAX_DESC" = "Du kannst keine weiteren Geräte verknüpfen.";
@@ -915,7 +1038,7 @@
 /* The title for the 'create group' button. */
 "NEW_GROUP_CREATE_BUTTON" = "Erstellen";
 
-/* The navbar title for the 'new group' view. */
+/* Used in place of the group name when a group has not yet been named. */
 "NEW_GROUP_DEFAULT_TITLE" = "Neue Gruppe";
 
 /* An indicator that a user is a member of the new group. */
@@ -932,6 +1055,9 @@
 
 /* The alert title if user tries to exit the new group view without saving changes. */
 "NEW_GROUP_VIEW_UNSAVED_CHANGES_TITLE" = "Ungespeicherte Änderungen";
+
+/* No comment provided by engineer. */
+"new_message" = "Neue Nachricht";
 
 /* A label for the 'add by phone number' button in the 'new non-contact conversation' view */
 "NEW_NONCONTACT_CONVERSATION_VIEW_BUTTON" = "Suchen";
@@ -989,10 +1115,7 @@
 "OUTGOING_INCOMPLETE_CALL" = "Ausgehender, unbeantworteter Anruf";
 
 /* A display format for oversize text messages. */
-"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@ … [Antippen für mehr]";
-
-/* The title of the 'oversize text message' view. */
-"OVERSIZE_TEXT_MESSAGE_VIEW_TITLE" = "Nachricht";
+"OVERSIZE_TEXT_DISPLAY_FORMAT" = "%@…";
 
 /* A format for a label showing an example phone number. Embeds {{the example phone number}}. */
 "PHONE_NUMBER_EXAMPLE_FORMAT" = "Beispiel: %@";
@@ -1151,12 +1274,6 @@
 "RATING_TITLE" = "Unterstütze Signal!";
 
 /* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_MESSAGE" = "Bitte gib eine gültige Landesvorwahl ein";
-
-/* No comment provided by engineer. */
-"REGISTER_CC_ERR_ALERT_VIEW_TITLE" = "Fehler bei der Landesvorwahl";
-
-/* No comment provided by engineer. */
 "REGISTER_CONTACTS_WELCOME" = "Willkommen!";
 
 /* No comment provided by engineer. */
@@ -1252,10 +1369,19 @@
 /* No comment provided by engineer. */
 "SECURE_SESSION_RESET" = "Verschlüsselung neu gestartet.";
 
+/* Label for 'select gif to attach' action sheet button */
+"SELECT_GIF_BUTTON" = "GIF";
+
+/* Table section header for conversations you haven't recently used. */
+"SELECT_THREAD_TABLE_OTHER_CHATS_TITLE" = "Andere Kontakte";
+
+/* Table section header for recently active conversations */
+"SELECT_THREAD_TABLE_RECENT_CHATS_TITLE" = "Kürzliche Unterhaltungen";
+
 /* No comment provided by engineer. */
 "SEND_AGAIN_BUTTON" = "Erneut senden";
 
-/* No comment provided by engineer. */
+/* Label for the send button in the conversation view. */
 "SEND_BUTTON_TITLE" = "Senden";
 
 /* Header title for the 'send external file' view. */
@@ -1387,6 +1513,12 @@
 /* Settings table view cell label */
 "SETTINGS_PRIVACY_TITLE" = "Datenschutz";
 
+/* Label for the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPT" = "Lesebestätigungen";
+
+/* An explanation of the 'read receipts' setting. */
+"SETTINGS_READ_RECEIPTS_SECTION_FOOTER" = "Sehen und teilen, wann Nachrichten gelesen wurden. Diese Funktion ist optional and betrifft alle Unterhaltungen.";
+
 /* No comment provided by engineer. */
 "SETTINGS_SCREEN_SECURITY" = "Bildschirmsicherheit aktivieren";
 
@@ -1416,6 +1548,24 @@
 
 /* action sheet item */
 "SHARE_ACTION_TWEET" = "Twitter";
+
+/* Indicates that the share extension is still loading. */
+"SHARE_EXTENSION_LOADING" = "Wird geladen …";
+
+/* Message indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_MESSAGE" = "Starte zum Registrieren die Signal-App.";
+
+/* Title indicating that the share extension cannot be used until the user has registered in the main app. */
+"SHARE_EXTENSION_NOT_REGISTERED_TITLE" = "Nicht registriert";
+
+/* Message indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_MESSAGE" = "Starte zum Aktualisieren die Signal-App.";
+
+/* Title indicating that the share extension cannot be used until the main app has been launched at least once. */
+"SHARE_EXTENSION_NOT_YET_MIGRATED_TITLE" = "Nicht bereit";
+
+/* Shown when trying to share content to a Signal user for the share extension. Followed by failure details. */
+"SHARE_EXTENSION_UNABLE_TO_BUILD_ATTACHMENT_ALERT_TITLE" = "Anhang kann nicht vorbereitet werden";
 
 /* Action sheet item */
 "SHOW_SAFETY_NUMBER_ACTION" = "Neue Sicherheitsnummer anzeigen";
@@ -1477,6 +1627,9 @@
 /* Displayed if for some reason we can't determine a contacts phone number *or* name */
 "UNKNOWN_CONTACT_NAME" = "Unbekannter Kontakt";
 
+/* Indicates an unknown or unrecognizable value. */
+"UNKNOWN_VALUE" = "Unbekannt";
+
 /* button title for unlinking a device */
 "UNLINK_ACTION" = "Entfernen";
 
@@ -1508,10 +1661,10 @@
 "UPDATE_GROUP_CANT_REMOVE_MEMBERS_ALERT_TITLE" = "Nicht zulässig";
 
 /* Description of CallKit to upgrading (existing) users */
-"UPGRADE_EXPERIENCE_CALLKIT_DESCRIPTION" = "Mit der iOS-Anrufintegration ist das Beanworten von Anrufen aus dem Sperrbildschirm heraus einfach. Weiterhin ist es vertraulich, denn deine Anrufer werden standardmäßig anonymisiert.";
+"UPGRADE_EXPERIENCE_CALLKIT_DESCRIPTION" = "Mit der iOS-Anrufintegration ist das Beanworten von Anrufen aus dem Sperrbildschirm heraus einfach. Weiterhin ist es vertraulich, denn mit der Standardeinstellung werden deine Anrufer anonymisiert.";
 
 /* button label shown once when when user upgrades app, in context of call kit */
-"UPGRADE_EXPERIENCE_CALLKIT_PRIVACY_SETTINGS_BUTTON" = "Erfahre mehr in den Datenschutz-Einstellungen.";
+"UPGRADE_EXPERIENCE_CALLKIT_PRIVACY_SETTINGS_BUTTON" = "Erfahre mehr in den Datenschutzeinstellungen.";
 
 /* Header for upgrade experience */
 "UPGRADE_EXPERIENCE_CALLKIT_TITLE" = "Zum Antworten wischen";
@@ -1524,6 +1677,15 @@
 
 /* Header for upgrade experience */
 "UPGRADE_EXPERIENCE_INTRODUCING_PROFILES_TITLE" = "Bereit für dein Profilfoto?";
+
+/* Description of new profile feature for upgrading (existing) users */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_DESCRIPTION" = "Optional kannst du jetzt sehen und teilen, wann Nachrichten gelesen wurden.";
+
+/* button label shown one time, after upgrade */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_PRIVACY_SETTINGS" = "Aktiviere Lesebestätigungen in deinen Datenschutzeinstellungen.";
+
+/* Header for upgrade experience */
+"UPGRADE_EXPERIENCE_INTRODUCING_READ_RECEIPTS_TITLE" = "Neu: Lesebestätigungen";
 
 /* Description of video calling to upgrading (existing) users */
 "UPGRADE_EXPERIENCE_VIDEO_DESCRIPTION" = "Signal unterstützt jetzt sichere Videoanrufe. Beginne einfach einen Signal-Anruf wie sonst auch, tippe die Kameraschaltfläche an und winke deinem Kontakt zu.";
@@ -1552,8 +1714,8 @@
 /* button text during registration to request another SMS code be sent */
 "VERIFICATION_CHALLENGE_SUBMIT_AGAIN" = "Code via SMS erneut senden";
 
-/* button text during registration to submit your SMS verification code */
-"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "Verifikationscode senden";
+/* button text during registration to submit your SMS verification code. */
+"VERIFICATION_CHALLENGE_SUBMIT_CODE" = "Senden";
 
 /* Label indicating the phone number currently being verified. */
 "VERIFICATION_PHONE_NUMBER_FORMAT" = "Gib den an %@ gesendeten Verifikationscode ein.";

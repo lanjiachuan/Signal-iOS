@@ -4,25 +4,35 @@
 
 #import "TSAttributes.h"
 #import "TSAccountManager.h"
-#import "TSStorageManager+keyingMaterial.h"
+
+NS_ASSUME_NONNULL_BEGIN
 
 @implementation TSAttributes
 
-+ (NSDictionary *)attributesFromStorageWithVoiceSupport {
-    return [self attributesWithSignalingKey:[TSStorageManager signalingKey]
-                            serverAuthToken:[TSStorageManager serverAuthToken]];
++ (NSDictionary *)attributesFromStorageWithManualMessageFetching:(BOOL)isEnabled
+{
+    return [self attributesWithSignalingKey:TSAccountManager.signalingKey
+                            serverAuthToken:TSAccountManager.serverAuthToken
+                      manualMessageFetching:isEnabled];
 }
 
 + (NSDictionary *)attributesWithSignalingKey:(NSString *)signalingKey
                              serverAuthToken:(NSString *)authToken
+                       manualMessageFetching:(BOOL)isEnabled
 {
+    OWSAssert(signalingKey.length > 0);
+    OWSAssert(authToken.length > 0);
+
     return @{
         @"signalingKey" : signalingKey,
         @"AuthKey" : authToken,
         @"voice" : @(YES), // all Signal-iOS clients support voice
         @"video" : @(YES), // all Signal-iOS clients support WebRTC-based voice and video calls.
+        @"fetchesMessages" : @(isEnabled), // devices that don't support push must tell the server they fetch messages manually
         @"registrationId" : [NSString stringWithFormat:@"%i", [TSAccountManager getOrGenerateRegistrationId]]
     };
 }
 
 @end
+
+NS_ASSUME_NONNULL_END

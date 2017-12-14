@@ -5,6 +5,7 @@
 #import "TSAttachmentStream.h"
 #import "MIMETypeUtil.h"
 #import "NSData+Image.h"
+#import "OWSFileSystem.h"
 #import "TSAttachmentPointer.h"
 #import <AVFoundation/AVFoundation.h>
 #import <ImageIO/ImageIO.h>
@@ -30,9 +31,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation TSAttachmentStream
 
-- (instancetype)initWithContentType:(NSString *)contentType sourceFilename:(nullable NSString *)sourceFilename
+- (instancetype)initWithContentType:(NSString *)contentType
+                          byteCount:(UInt32)byteCount
+                     sourceFilename:(nullable NSString *)sourceFilename
 {
-    self = [super initWithContentType:contentType sourceFilename:sourceFilename];
+    self = [super initWithContentType:contentType byteCount:byteCount sourceFilename:sourceFilename];
     if (!self) {
         return self;
     }
@@ -100,6 +103,12 @@ NS_ASSUME_NONNULL_BEGIN
         // upload begins.
         self.isUploaded = YES;
     }
+
+    if (attachmentSchemaVersion < 4) {
+        // Legacy image sizes don't correctly reflect image orientation.
+        self.cachedImageWidth = nil;
+        self.cachedImageHeight = nil;
+    }
 }
 
 - (void)ensureFilePath
@@ -114,19 +123,16 @@ NS_ASSUME_NONNULL_BEGIN
                                               sourceFilename:self.sourceFilename
                                                     inFolder:attachmentsFolder];
     if (!filePath) {
-        DDLogError(@"%@ Could not generate path for attachment.", self.tag);
-        OWSAssert(0);
+        OWSFail(@"%@ Could not generate path for attachment.", self.logTag);
         return;
     }
     if (![filePath hasPrefix:attachmentsFolder]) {
-        DDLogError(@"%@ Attachment paths should all be in the attachments folder.", self.tag);
-        OWSAssert(0);
+        OWSFail(@"%@ Attachment paths should all be in the attachments folder.", self.logTag);
         return;
     }
     NSString *localRelativeFilePath = [filePath substringFromIndex:attachmentsFolder.length];
     if (localRelativeFilePath.length < 1) {
-        DDLogError(@"%@ Empty local relative attachment paths.", self.tag);
-        OWSAssert(0);
+        OWSFail(@"%@ Empty local relative attachment paths.", self.logTag);
         return;
     }
 
@@ -141,8 +147,7 @@ NS_ASSUME_NONNULL_BEGIN
     *error = nil;
     NSString *_Nullable filePath = self.filePath;
     if (!filePath) {
-        DDLogError(@"%@ Missing path for attachment.", self.tag);
-        OWSAssert(0);
+        OWSFail(@"%@ Missing path for attachment.", self.logTag);
         return nil;
     }
     return [NSData dataWithContentsOfFile:filePath options:0 error:error];
@@ -150,15 +155,46 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (BOOL)writeData:(NSData *)data error:(NSError **)error
 {
+    OWSAssert(data);
+
     *error = nil;
     NSString *_Nullable filePath = self.filePath;
     if (!filePath) {
-        DDLogError(@"%@ Missing path for attachment.", self.tag);
-        OWSAssert(0);
+        OWSFail(@"%@ Missing path for attachment.", self.logTag);
         return NO;
     }
-    DDLogInfo(@"%@ Writing attachment to file: %@", self.tag, filePath);
+    DDLogInfo(@"%@ Writing attachment to file: %@", self.logTag, filePath);
     return [data writeToFile:filePath options:0 error:error];
+}
+
+- (BOOL)writeDataSource:(DataSource *)dataSource
+{
+    OWSAssert(dataSource);
+
+    NSString *_Nullable filePath = self.filePath;
+    if (!filePath) {
+        OWSFail(@"%@ Missing path for attachment.", self.logTag);
+        return NO;
+    }
+    DDLogInfo(@"%@ Writing attachment to file: %@", self.logTag, filePath);
+    return [dataSource writeToPath:filePath];
+}
+
++ (NSString *)legacyAttachmentsDirPath
+{
+    return [[OWSFileSystem appDocumentDirectoryPath] stringByAppendingPathComponent:@"Attachments"];
+}
+
++ (NSString *)sharedDataAttachmentsDirPath
+{
+    return [[OWSFileSystem appSharedDataDirectoryPath] stringByAppendingPathComponent:@"Attachments"];
+}
+
++ (void)migrateToSharedData
+{
+    [OWSFileSystem moveAppFilePath:self.legacyAttachmentsDirPath
+                sharedDataFilePath:self.sharedDataAttachmentsDirPath
+                     exceptionName:@"CouldNotMigrateAttachmentsDirectory"];
 }
 
 + (NSString *)attachmentsFolder
@@ -166,26 +202,11 @@ NS_ASSUME_NONNULL_BEGIN
     static NSString *attachmentsFolder = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSString *documentsPath =
-            [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
-        attachmentsFolder = [documentsPath stringByAppendingPathComponent:@"Attachments"];
+        attachmentsFolder = TSAttachmentStream.sharedDataAttachmentsDirPath;
 
-        BOOL isDirectory;
-        BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:attachmentsFolder isDirectory:&isDirectory];
-        if (exists) {
-            OWSAssert(isDirectory);
+        [OWSFileSystem ensureDirectoryExists:attachmentsFolder];
 
-            DDLogInfo(@"Attachments directory already exists");
-        } else {
-            NSError *error = nil;
-            [[NSFileManager defaultManager] createDirectoryAtPath:attachmentsFolder
-                                      withIntermediateDirectories:YES
-                                                       attributes:nil
-                                                            error:&error];
-            if (error) {
-                DDLogError(@"Failed to create attachments directory: %@", error);
-            }
-        }
+        [OWSFileSystem protectFolderAtPath:attachmentsFolder];
     });
     return attachmentsFolder;
 }
@@ -193,7 +214,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSString *)filePath
 {
     if (!self.localRelativeFilePath) {
-        OWSAssert(0);
+        OWSFail(@"%@ Attachment missing local file path.", self.logTag);
         return nil;
     }
 
@@ -204,8 +225,7 @@ NS_ASSUME_NONNULL_BEGIN
 {
     NSString *_Nullable filePath = self.filePath;
     if (!filePath) {
-        DDLogError(@"%@ Missing path for attachment.", self.tag);
-        OWSAssert(0);
+        OWSFail(@"%@ Missing path for attachment.", self.logTag);
         return nil;
     }
     return [NSURL fileURLWithPath:filePath];
@@ -215,15 +235,14 @@ NS_ASSUME_NONNULL_BEGIN
 {
     NSString *_Nullable filePath = self.filePath;
     if (!filePath) {
-        DDLogError(@"%@ Missing path for attachment.", self.tag);
-        OWSAssert(0);
+        OWSFail(@"%@ Missing path for attachment.", self.logTag);
         return;
     }
     NSError *error;
     [[NSFileManager defaultManager] removeItemAtPath:filePath error:&error];
 
     if (error) {
-        DDLogError(@"%@ remove file errored with: %@", self.tag, error);
+        DDLogError(@"%@ remove file errored with: %@", self.logTag, error);
     }
 }
 
@@ -326,7 +345,7 @@ NS_ASSUME_NONNULL_BEGIN
         // With CGImageSource we avoid loading the whole image into memory.
         CGImageSourceRef source = CGImageSourceCreateWithURL((CFURLRef)mediaUrl, NULL);
         if (!source) {
-            OWSAssert(0);
+            OWSFail(@"%@ Could not load image: %@", self.logTag, mediaUrl);
             return CGSizeZero;
         }
 
@@ -337,12 +356,19 @@ NS_ASSUME_NONNULL_BEGIN
             = (__bridge_transfer NSDictionary *)CGImageSourceCopyPropertiesAtIndex(source, 0, (CFDictionaryRef)options);
         CGSize imageSize = CGSizeZero;
         if (properties) {
+            NSNumber *orientation = properties[(NSString *)kCGImagePropertyOrientation];
             NSNumber *width = properties[(NSString *)kCGImagePropertyPixelWidth];
             NSNumber *height = properties[(NSString *)kCGImagePropertyPixelHeight];
+
             if (width && height) {
                 imageSize = CGSizeMake(width.floatValue, height.floatValue);
+
+                if (orientation) {
+                    imageSize =
+                        [self applyImageOrientation:(UIImageOrientation)orientation.intValue toImageSize:imageSize];
+                }
             } else {
-                OWSAssert(0);
+                OWSFail(@"%@ Could not determine size of image: %@", self.logTag, mediaUrl);
             }
         }
         CFRelease(source);
@@ -352,7 +378,25 @@ NS_ASSUME_NONNULL_BEGIN
     }
 }
 
-- (CGSize)ensureCachedImageSizeWithTransaction:(YapDatabaseReadWriteTransaction *_Nullable)transaction
+- (CGSize)applyImageOrientation:(UIImageOrientation)orientation toImageSize:(CGSize)imageSize
+{
+    switch (orientation) {
+        case UIImageOrientationUp: // EXIF = 1
+        case UIImageOrientationUpMirrored: // EXIF = 2
+        case UIImageOrientationDown: // EXIF = 3
+        case UIImageOrientationDownMirrored: // EXIF = 4
+            return imageSize;
+        case UIImageOrientationLeftMirrored: // EXIF = 5
+        case UIImageOrientationLeft: // EXIF = 6
+        case UIImageOrientationRightMirrored: // EXIF = 7
+        case UIImageOrientationRight: // EXIF = 8
+            return CGSizeMake(imageSize.height, imageSize.width);
+        default:
+            return imageSize;
+    }
+}
+
+- (CGSize)imageSize
 {
     OWSAssert([NSThread isMainThread]);
 
@@ -364,8 +408,7 @@ NS_ASSUME_NONNULL_BEGIN
     self.cachedImageWidth = @(imageSize.width);
     self.cachedImageHeight = @(imageSize.height);
 
-    void (^updateDataStore)() = ^(YapDatabaseReadWriteTransaction *transaction) {
-        OWSAssert(transaction);
+    [self.dbReadWriteConnection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
 
         NSString *collection = [[self class] collection];
         TSAttachmentStream *latestInstance = [transaction objectForKey:self.uniqueId inCollection:collection];
@@ -374,35 +417,14 @@ NS_ASSUME_NONNULL_BEGIN
             latestInstance.cachedImageHeight = @(imageSize.height);
             [latestInstance saveWithTransaction:transaction];
         } else {
-            // This message has not yet been saved; do nothing.
-            OWSAssert(0);
+            // This message has not yet been saved or has been deleted; do nothing.
+            // This isn't an error per se, but these race conditions should be
+            // _very_ rare.
+            OWSFail(@"%@ Attachment not yet saved.", self.logTag);
         }
-    };
-
-    if (transaction) {
-        updateDataStore(transaction);
-    } else {
-        [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-            updateDataStore(transaction);
-        }];
-    }
+    }];
 
     return imageSize;
-}
-
-- (CGSize)imageSizeWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
-{
-    OWSAssert([NSThread isMainThread]);
-    OWSAssert(transaction);
-
-    return [self ensureCachedImageSizeWithTransaction:transaction];
-}
-
-- (CGSize)imageSizeWithoutTransaction
-{
-    OWSAssert([NSThread isMainThread]);
-
-    return [self ensureCachedImageSizeWithTransaction:nil];
 }
 
 - (CGFloat)calculateAudioDurationSeconds
@@ -425,7 +447,7 @@ NS_ASSUME_NONNULL_BEGIN
     }
 }
 
-- (CGFloat)ensureCachedAudioDurationSecondsWithTransaction:(YapDatabaseReadWriteTransaction *_Nullable)transaction
+- (CGFloat)audioDurationSeconds
 {
     OWSAssert([NSThread isMainThread]);
 
@@ -436,56 +458,21 @@ NS_ASSUME_NONNULL_BEGIN
     CGFloat audioDurationSeconds = [self calculateAudioDurationSeconds];
     self.cachedAudioDurationSeconds = @(audioDurationSeconds);
 
-    void (^updateDataStore)() = ^(YapDatabaseReadWriteTransaction *transaction) {
-        OWSAssert(transaction);
-
+    [self.dbReadWriteConnection asyncReadWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
         NSString *collection = [[self class] collection];
         TSAttachmentStream *latestInstance = [transaction objectForKey:self.uniqueId inCollection:collection];
         if (latestInstance) {
             latestInstance.cachedAudioDurationSeconds = @(audioDurationSeconds);
             [latestInstance saveWithTransaction:transaction];
         } else {
-            // This message has not yet been saved; do nothing.
-            OWSAssert(0);
+            // This message has not yet been saved or has been deleted; do nothing.
+            // This isn't an error per se, but these race conditions should be
+            // _very_ rare.
+            OWSFail(@"%@ Attachment not yet saved.", self.logTag);
         }
-    };
-
-    if (transaction) {
-        updateDataStore(transaction);
-    } else {
-        [self.dbReadWriteConnection readWriteWithBlock:^(YapDatabaseReadWriteTransaction *transaction) {
-            updateDataStore(transaction);
-        }];
-    }
+    }];
 
     return audioDurationSeconds;
-}
-
-- (CGFloat)audioDurationSecondsWithTransaction:(YapDatabaseReadWriteTransaction *)transaction
-{
-    OWSAssert([NSThread isMainThread]);
-    OWSAssert(transaction);
-
-    return [self ensureCachedAudioDurationSecondsWithTransaction:transaction];
-}
-
-- (CGFloat)audioDurationSecondsWithoutTransaction
-{
-    OWSAssert([NSThread isMainThread]);
-
-    return [self ensureCachedAudioDurationSecondsWithTransaction:nil];
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
 }
 
 @end

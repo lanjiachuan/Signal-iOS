@@ -5,6 +5,7 @@
 #import "OWSUploadingService.h"
 #import "Cryptography.h"
 #import "MIMETypeUtil.h"
+#import "NSNotificationCenter+OWS.h"
 #import "OWSError.h"
 #import "OWSMessageSender.h"
 #import "TSAttachmentStream.h"
@@ -43,10 +44,10 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
 
 - (void)uploadAttachmentStream:(TSAttachmentStream *)attachmentStream
                        message:(TSOutgoingMessage *)outgoingMessage
-                       success:(void (^)())successHandler
+                       success:(void (^)(void))successHandler
                        failure:(RetryableFailureHandler)failureHandler
 {
-    void (^successHandlerWrapper)() = ^{
+    void (^successHandlerWrapper)(void) = ^{
         [self fireProgressNotification:1 attachmentId:attachmentStream.uniqueId];
 
         successHandler();
@@ -59,8 +60,8 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
     };
 
     if (attachmentStream.serverId) {
-        DDLogDebug(@"%@ Attachment previously uploaded.", self.tag);
-        successHandlerWrapper(outgoingMessage);
+        DDLogDebug(@"%@ Attachment previously uploaded.", self.logTag);
+        successHandlerWrapper();
         return;
     }
 
@@ -71,7 +72,7 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
         success:^(NSURLSessionDataTask *task, id responseObject) {
             dispatch_async([OWSDispatch attachmentsQueue], ^{ // TODO can we move this queue specification up a level?
                 if (![responseObject isKindOfClass:[NSDictionary class]]) {
-                    DDLogError(@"%@ unexpected response from server: %@", self.tag, responseObject);
+                    DDLogError(@"%@ unexpected response from server: %@", self.logTag, responseObject);
                     NSError *error = OWSErrorMakeUnableToProcessServerResponseError();
                     [error setIsRetryable:YES];
                     return failureHandlerWrapper(error);
@@ -84,7 +85,7 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
                 NSError *error;
                 NSData *attachmentData = [attachmentStream readDataFromFileWithError:&error];
                 if (error) {
-                    DDLogError(@"%@ Failed to read attachment data with error:%@", self.tag, error);
+                    DDLogError(@"%@ Failed to read attachment data with error:%@", self.logTag, error);
                     [error setIsRetryable:YES];
                     return failureHandlerWrapper(error);
                 }
@@ -103,19 +104,17 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
                                      success:^{
                                          OWSAssert([NSThread isMainThread]);
 
-                                         DDLogInfo(@"%@ Uploaded attachment: %p.", self.tag, attachmentStream);
+                                         DDLogInfo(@"%@ Uploaded attachment: %p.", self.logTag, attachmentStream);
                                          attachmentStream.serverId = serverId;
                                          attachmentStream.isUploaded = YES;
-                                         [attachmentStream save];
-
-                                         successHandlerWrapper();
+                                         [attachmentStream saveAsyncWithCompletionBlock:successHandlerWrapper];
                                      }
                                      failure:failureHandlerWrapper];
 
             });
         }
         failure:^(NSURLSessionDataTask *task, NSError *error) {
-            DDLogError(@"%@ Failed to allocate attachment with error: %@", self.tag, error);
+            DDLogError(@"%@ Failed to allocate attachment with error: %@", self.logTag, error);
             [error setIsRetryable:YES];
             failureHandlerWrapper(error);
         }];
@@ -125,7 +124,7 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
 - (void)uploadDataWithProgress:(NSData *)cipherText
                       location:(NSString *)location
                   attachmentId:(NSString *)attachmentId
-                       success:(void (^)())successHandler
+                       success:(void (^)(void))successHandler
                        failure:(RetryableFailureHandler)failureHandler
 {
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:[NSURL URLWithString:location]];
@@ -153,7 +152,7 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
             NSInteger statusCode = ((NSHTTPURLResponse *)response).statusCode;
             BOOL isValidResponse = (statusCode >= 200) && (statusCode < 400);
             if (!isValidResponse) {
-                DDLogError(@"%@ Unexpected server response: %d", self.tag, (int)statusCode);
+                DDLogError(@"%@ Unexpected server response: %d", self.logTag, (int)statusCode);
                 NSError *invalidResponseError = OWSErrorMakeUnableToProcessServerResponseError();
                 [invalidResponseError setIsRetryable:YES];
                 return failureHandler(invalidResponseError);
@@ -167,27 +166,13 @@ static const CGFloat kAttachmentUploadProgressTheta = 0.001f;
 
 - (void)fireProgressNotification:(CGFloat)progress attachmentId:(NSString *)attachmentId
 {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
-        [notificationCenter postNotificationName:kAttachmentUploadProgressNotification
-                                          object:nil
-                                        userInfo:@{
-                                            kAttachmentUploadProgressKey : @(progress),
-                                            kAttachmentUploadAttachmentIDKey : attachmentId
-                                        }];
-    });
-}
-
-#pragma mark - Logging
-
-+ (NSString *)tag
-{
-    return [NSString stringWithFormat:@"[%@]", self.class];
-}
-
-- (NSString *)tag
-{
-    return self.class.tag;
+    NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+    [notificationCenter postNotificationNameAsync:kAttachmentUploadProgressNotification
+                                           object:nil
+                                         userInfo:@{
+                                             kAttachmentUploadProgressKey : @(progress),
+                                             kAttachmentUploadAttachmentIDKey : attachmentId
+                                         }];
 }
 
 @end
